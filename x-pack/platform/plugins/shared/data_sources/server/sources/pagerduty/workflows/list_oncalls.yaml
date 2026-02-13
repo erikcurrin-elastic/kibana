@@ -1,0 +1,77 @@
+version: '1'
+name: sources.pagerduty.list_oncalls
+description: 'List current on-call assignments in PagerDuty. Supports filtering by schedule, user, or escalation policy, and time range queries. Use this to find who is currently on call for specific schedules.'
+tags: ['agent-builder-tool']
+enabled: true
+triggers:
+  - type: manual
+inputs:
+  - name: limit
+    type: number
+    required: false
+  - name: offset
+    type: number
+    required: false
+  - name: schedule_ids
+    type: array
+    required: false
+    description: 'list of schedule IDs to filter by (e.g., ["P123ABC,P456DEF"])'
+  - name: user_ids
+    type: array
+    required: false
+    description: 'List of user IDs to filter by'
+  - name: escalation_policy_ids
+    type: array
+    required: false
+    description: 'List of escalation policy IDs to filter by'
+  - name: since
+    type: string
+    required: false
+    description: 'Start of time range for on-call periods (ISO 8601 format)'
+  - name: until
+    type: string
+    required: false
+    description: 'End of time range for on-call periods (ISO 8601 format)'
+  - name: include
+    type: array
+    required: false
+    description: |
+      List of related resources to include, allowed values: acknowledgers, agents, assignees, conference_bridge,
+        escalation_policies, first_trigger_log_entries, priorities, services, teams, users
+  - name: time_zone
+    type: string
+    required: false
+    description: 'Time zone in which dates in the result will be rendered (IANA time zone database name)'
+steps:
+  - name: list-oncalls
+    type: mcp.callTool
+    connector-id: <%= stackConnectorId %>
+    with:
+      name: "list_oncalls"
+      parseResponse: true
+      arguments:
+        query_model:
+          limit: ${{inputs.limit}}
+          offset: ${{inputs.offset}}
+          schedule_ids: "${{inputs.schedule_ids}}"
+          user_ids: "${{inputs.user_ids}}"
+          escalation_policy_ids: "${{inputs.escalation_policy_ids}}"
+          since: "${{inputs.since}}"
+          until: "${{inputs.until}}"
+          include: ${{inputs.include}}
+          time_zone: "${{inputs.time_zone}}"
+  - name: get-oncalls
+    type: data.map
+    items: "${{steps['list-oncalls'].output.parsed.response}}"
+    with:
+      transform:
+        pick:
+        escalation_level:
+        schedule:
+          id:
+          summary:
+        user:
+          id:
+          summary:
+        start:
+        end:

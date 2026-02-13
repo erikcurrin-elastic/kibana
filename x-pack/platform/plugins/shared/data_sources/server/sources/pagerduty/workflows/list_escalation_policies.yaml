@@ -1,0 +1,58 @@
+version: '1'
+name: sources.pagerduty.list_escalation_policies
+description: 'List escalation policies in PagerDuty. Supports pagination with limit and offset, filtering by query, and including related resources. Query format: free-text search string that searches across name and description fields (e.g., "production" or "on-call").'
+enabled: true
+triggers:
+  - type: manual
+inputs:
+  - name: limit
+    type: number
+    required: false
+  - name: offset
+    type: number
+    required: false
+  - name: query
+    type: string
+    required: false
+    description: 'Free-text search string that searches across name and description fields (e.g., "production" or "on-call")'
+  - name: include
+    type: array
+    required: false
+    description: |
+      List of related resources to include, allowed values: acknowledgers, agents, assignees, conference_bridge,
+        escalation_policies, first_trigger_log_entries, priorities, services, teams, users
+steps:
+  - name: list-escalation-policies
+    type: mcp.callTool
+    connector-id: <%= stackConnectorId %>
+    with:
+      name: "list_escalation_policies"
+      parseResponse: true
+      arguments:
+        query_model:
+          query: "${{inputs.query}}"
+          limit: ${{inputs.limit}}
+          offset: ${{inputs.offset}}
+          include: ${{inputs.include}}
+  - name: get-escalation-policies
+    type: data.map
+    items: "${{steps['list-escalation-policies'].output.parsed.response}}"
+    with:
+      transform:
+        pick:
+        id:
+        name:
+        description:
+        num_loops:
+        escalation_rules:
+          id:
+          escalation_delay_in_minutes:
+          targets:
+            id:
+            type:
+        services:
+          id:
+          summary:
+        teams:
+          id:
+          summary:

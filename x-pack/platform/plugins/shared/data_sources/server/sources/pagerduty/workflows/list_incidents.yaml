@@ -1,0 +1,76 @@
+version: '1'
+name: sources.pagerduty.list_incidents
+description: 'List incidents in PagerDuty. Supports filtering by status, service, date range, urgency, and pagination. Filter formats: statuses and urgencies are comma-separated strings (e.g., "triggered,acknowledged" or "high,low"); service_ids is comma-separated service IDs; dates use ISO 8601 format (e.g., "2024-01-01T00:00:00Z").'
+tags: ['agent-builder-tool']
+enabled: true
+triggers:
+  - type: manual
+inputs:
+  - name: limit
+    type: number
+    required: false
+  - name: offset
+    type: number
+    required: false
+  - name: statuses
+    type: string
+    required: false
+    description: 'Comma-separated list of statuses (e.g., "triggered,acknowledged,resolved")'
+  - name: service_ids
+    type: string
+    required: false
+    description: 'Comma-separated list of service IDs to filter by'
+  - name: since
+    type: string
+    required: false
+    description: 'Start of the date range over which you want to search (ISO 8601 format)'
+  - name: until
+    type: string
+    required: false
+    description: 'End of the date range over which you want to search (ISO 8601 format)'
+  - name: urgencies
+    type: string
+    required: false
+    description: 'Comma-separated list of urgencies (e.g., "high,low")'
+  - name: include
+    type: array
+    required: false
+    description: |
+      List of related resources to include, allowed values: acknowledgers, agents, assignees, conference_bridge,
+        escalation_policies, first_trigger_log_entries, priorities, services, teams, users
+steps:
+  - name: list-incidents
+    type: mcp.callTool
+    connector-id: <%= stackConnectorId %>
+    with:
+      name: "list_incidents"
+      parseResponse: true
+      arguments:
+        query_model:
+          limit: ${{inputs.limit}}
+          offset: ${{inputs.offset}}
+          statuses: "${{inputs.statuses}}"
+          service_ids: "${{inputs.service_ids}}"
+          since: "${{inputs.since}}"
+          until: "${{inputs.until}}"
+          urgencies: "${{inputs.urgencies}}"
+          include: "${{inputs.include}}"
+  - name: get-incidents
+    type: data.map
+    items: "${{steps['list-incidents'].output.parsed.response}}"
+    with:
+      transform:
+        pick:
+        id:
+        summary:
+        urgency:
+        status:
+        service:
+          id:
+          summary:
+        assigned_to:
+          id:
+          summary:
+        created_at:
+        updated_at:
+        incident_key:
