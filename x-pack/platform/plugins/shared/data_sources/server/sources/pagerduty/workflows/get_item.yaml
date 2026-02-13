@@ -1,0 +1,186 @@
+version: '1'
+name: sources.pagerduty.get_item
+description: Get a PagerDuty item by ID (schedule, incident, escalation policy, user, or team). Returns full payload for user and team.
+tags: ['agent-builder-tool']
+enabled: true
+triggers:
+  - type: manual
+inputs:
+  properties:
+    id:
+      type: string
+      description: The ID of the item to retrieve
+    item_type:
+      type: string
+      description: 'The type of item to retrieve, one of: schedule, incident, escalation_policy, user, team'
+    include:
+      type: array
+      description: |
+         List of related resources to include.  Valid values by type:
+            schedule - N/A
+            incident - past (get past instances of this incident), related (get related incidents), alerts (triggered by the incident), notes (notes attached to the incident), acknowledgers, assignees, priorities, services, teams, users
+            escalation_policy - services, teams, targets
+            user, team - N/A
+    time_zone:
+      type: string
+      description: Time zone in which dates in the result will be rendered (IANA time zone database name)
+  required:
+    - id
+    - item_type
+  additionalProperties: false
+steps:
+  - name: if-schedule
+    type: if
+    condition: "${{inputs.item_type == 'schedule'}}"
+    steps:
+      - name: get-schedule
+        type: mcp.callTool
+        connector-id: <%= stackConnectorId %>
+        with:
+          name: "get_schedule"
+          parseResponse: true
+          arguments:
+            query_model:
+              id: "${{inputs.id}}"
+              include: ${{inputs.include}}
+              time_zone: "${{inputs.time_zone}}"
+      - name: filter-schedule
+        type: data.map
+        items: "${{steps['get-schedule'].output.parsed.response}}"
+        with:
+          transform:
+            pick:
+            id:
+            name:
+            description:
+            time_zone:
+            schedule_layers:
+              id:
+              name:
+              start:
+              rotation_virtual_start:
+              rotation_turn_length_seconds:
+              users:
+                user:
+                  id:
+                  summary:
+            users:
+              id:
+              summary:
+    else:
+      - name: if-incident-check
+        type: if
+        condition: "${{inputs.item_type == 'incident'}}"
+        steps:
+          - name: get-incident
+            type: mcp.callTool
+            connector-id: <%= stackConnectorId %>
+            with:
+              name: "get_incident"
+              parseResponse: true
+              arguments:
+                query_model:
+                  id: "${{inputs.id}}"
+                  include: ${{inputs.include}}
+          - name: filter-incident
+            type: data.map
+            items: "${{steps['get-incident'].output.parsed.response}}"
+            with:
+              transform:
+                pick:
+                id:
+                summary:
+                urgency:
+                status:
+                service:
+                  id:
+                  summary:
+                assigned_to:
+                  id:
+                  summary:
+                created_at:
+                updated_at:
+        else:
+          - name: if-escalation-policy
+            type: if
+            condition: "${{ inputs.item_type == 'escalation_policy' }}"
+            steps:
+              - name: get-escalation-policy
+                type: mcp.callTool
+                connector-id: <%= stackConnectorId %>
+                with:
+                  name: "get_escalation_policy"
+                  parseResponse: true
+                  arguments:
+                    query_model:
+                      id: "${{inputs.id}}"
+                      include: ${{inputs.include}}
+              - name: filter-escalation-policy
+                type: data.map
+                items: "${{steps['get-escalation-policy'].output.parsed.response}}"
+                with:
+                  transform:
+                    pick:
+                    id:
+                    name:
+                    description:
+                    num_loops:
+                    escalation_rules:
+                      id:
+                      escalation_delay_in_minutes:
+                      targets:
+                        id:
+                        type:
+                    services:
+                      id:
+                      summary:
+                    teams:
+                      id:
+                      summary:
+            else:
+              - name: if-user
+                type: if
+                condition: "${{ inputs.item_type == 'user' }}"
+                steps:
+                  - name: get-user
+                    type: mcp.callTool
+                    connector-id: <%= stackConnectorId %>
+                    with:
+                      name: "get_user"
+                      parseResponse: true
+                      arguments:
+                        query_model:
+                          id: "${{inputs.id}}"
+                  - name: filter-user
+                    type: data.map
+                    items: "${{steps['get-user'].output.parsed.response}}"
+                    with:
+                      transform:
+                        pick:
+                        id:
+                        name:
+                        email:
+                        summary:
+              - name: if-team
+                type: if
+                condition: "${{ inputs.item_type == 'team' }}"
+                steps:
+                  - name: get-team
+                    type: mcp.callTool
+                    connector-id: <%= stackConnectorId %>
+                    with:
+                      name: "get_team"
+                      parseResponse: true
+                      arguments:
+                        query_model:
+                          id: "${{inputs.id}}"
+                  - name: filter-team
+                    type: data.map
+                    items: "${{steps['get-team'].output.parsed.response}}"
+                    with:
+                      transform:
+                        pick:
+                        id:
+                        name:
+                        description:
+                        summary:

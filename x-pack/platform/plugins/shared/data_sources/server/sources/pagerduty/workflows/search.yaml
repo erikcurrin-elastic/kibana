@@ -1,0 +1,168 @@
+version: '1'
+name: sources.pagerduty.search
+description: List PagerDuty items by type (schedules, escalation_policies, users, teams) with query. Uses common params limit, offset, total, query, include.
+tags: ['agent-builder-tool']
+enabled: true
+triggers:
+  - type: manual
+inputs:
+  properties:
+    item_type:
+      type: string
+      description: 'The type of items to list, one of: schedules, escalation_policies, users, teams'
+    limit:
+      type: number
+      description: Maximum number of items to return
+    offset:
+      type: number
+      description: Number of items to skip (pagination)
+    total:
+      type: boolean
+      description: If true, include total count in the response
+    query:
+      type: string
+      description: 'Free-text search across name and description fields (users: name, email; teams: name, description)'
+    include:
+      type: array
+      description: |
+        List of related resources to include.  Valid values by type:
+            schedules - N/A (list response includes schedule_layers, users)
+            escalation_policies - services, teams, targets
+            users, teams - N/A
+  required:
+    - item_type
+  additionalProperties: false
+steps:
+  - name: if-schedules
+    type: if
+    condition: "${{inputs.item_type == 'schedules'}}"
+    steps:
+      - name: list-schedules
+        type: mcp.callTool
+        connector-id: <%= stackConnectorId %>
+        with:
+          name: "list_schedules"
+          parseResponse: true
+          arguments:
+            query_model:
+              limit: ${{inputs.limit}}
+              offset: ${{inputs.offset}}
+              total: ${{inputs.total}}
+              query: "${{inputs.query}}"
+              include: "${{inputs.include}}"
+      - name: get-schedules
+        type: data.map
+        items: "${{steps['list-schedules'].output.parsed.response}}"
+        with:
+          transform:
+            pick:
+            id:
+            name:
+            description:
+            time_zone:
+            schedule_layers:
+              id:
+              name:
+              start:
+              rotation_virtual_start:
+              rotation_turn_length_seconds:
+              users:
+                user:
+                  id:
+                  summary:
+            users:
+              id:
+              summary:
+    else:
+      - name: if-escalation-policies
+        type: if
+        condition: "${{inputs.item_type == 'escalation_policies'}}"
+        steps:
+          - name: list-escalation-policies
+            type: mcp.callTool
+            connector-id: <%= stackConnectorId %>
+            with:
+              name: "list_escalation_policies"
+              parseResponse: true
+              arguments:
+                query_model:
+                  limit: ${{inputs.limit}}
+                  offset: ${{inputs.offset}}
+                  total: ${{inputs.total}}
+                  query: "${{inputs.query}}"
+                  include: "${{inputs.include}}"
+          - name: get-escalation-policies
+            type: data.map
+            items: "${{steps['list-escalation-policies'].output.parsed.response}}"
+            with:
+              transform:
+                pick:
+                id:
+                name:
+                description:
+                num_loops:
+                escalation_rules:
+                  id:
+                  escalation_delay_in_minutes:
+                  targets:
+                    id:
+                    type:
+                services:
+                  id:
+                  summary:
+                teams:
+                  id:
+                  summary:
+        else:
+          - name: if-users
+            type: if
+            condition: "${{inputs.item_type == 'users'}}"
+            steps:
+              - name: list-users
+                type: mcp.callTool
+                connector-id: <%= stackConnectorId %>
+                with:
+                  name: "list_users"
+                  parseResponse: true
+                  arguments:
+                    query_model:
+                      limit: ${{inputs.limit}}
+                      offset: ${{inputs.offset}}
+                      total: ${{inputs.total}}
+                      query: "${{inputs.query}}"
+              - name: get-users
+                type: data.map
+                items: "${{steps['list-users'].output.parsed.response}}"
+                with:
+                  transform:
+                    pick:
+                    id:
+                    name:
+                    email:
+                    summary:
+          - name: if-teams
+            type: if
+            condition: "${{inputs.item_type == 'teams'}}"
+            steps:
+              - name: list-teams
+                type: mcp.callTool
+                connector-id: <%= stackConnectorId %>
+                with:
+                  name: "list_teams"
+                  parseResponse: true
+                  arguments:
+                    query_model:
+                      limit: ${{inputs.limit}}
+                      offset: ${{inputs.offset}}
+                      total: ${{inputs.total}}
+                      query: "${{inputs.query}}"
+              - name: get-teams
+                type: data.map
+                items: "${{steps['list-teams'].output.parsed.response}}"
+                with:
+                  transform:
+                    pick:
+                    id:
+                    name:
+                    description:
+                    summary:
