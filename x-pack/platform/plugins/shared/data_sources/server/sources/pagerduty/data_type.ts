@@ -19,28 +19,30 @@ export const pagerdutyDataSource: DataSource = {
 
   iconType: '.pagerduty-v2',
 
-  stackConnector: {
-    type: '.mcp',
-    config: {
-      serverUrl: 'https://api.pagerduty.com',
-      hasAuth: true,
-      authType: MCPAuthType.ApiKey,
-      apiKeyHeaderName: 'Authorization',
+  stackConnectors: [
+    {
+      type: '.mcp',
+      config: {
+        serverUrl: 'https://api.pagerduty.com',
+        hasAuth: true,
+        authType: MCPAuthType.ApiKey,
+        apiKeyHeaderName: 'Authorization',
+      },
+      importedTools: [
+        { name: 'list_schedules' },
+        { name: 'list_escalation_policies' },
+        { name: 'list_incidents' },
+        { name: 'list_oncalls' },
+        { name: 'list_users' },
+        { name: 'list_teams' },
+        { name: 'get_schedule' },
+        { name: 'get_incident' },
+        { name: 'get_escalation_policy' },
+        { name: 'get_user' },
+        { name: 'get_team' },
+      ],
     },
-    importedTools: [
-      'list_schedules',
-      'list_escalation_policies',
-      'list_incidents',
-      'list_oncalls',
-      'list_users',
-      'list_teams',
-      'get_schedule',
-      'get_incident',
-      'get_escalation_policy',
-      'get_user',
-      'get_team',
-    ],
-  },
+  ],
 
   workflows: {
     directory: __dirname + '/workflows',
