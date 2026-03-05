@@ -223,7 +223,7 @@ tags:
     expect(createdYaml).toMatch(/-\s*agent-builder-tool/);
     expect(mockToolRegistry.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'test_type.my-data-source.search',
+        id: 'my-data-source.source.test_type.search',
         type: 'workflow',
         description: 'Search Notion content',
         tags: ['data-source', 'test_type'],
@@ -395,7 +395,7 @@ tags:
             description: 'List repository issues List issues',
           },
         ],
-        namespace: 'test_type.my-mcp-connector',
+        namespace: 'my-mcp-connector.source.test_type',
       });
       expect(mockSavedObjectsClient.create).toHaveBeenCalledWith(
         DATA_SOURCE_SAVED_OBJECT_TYPE,

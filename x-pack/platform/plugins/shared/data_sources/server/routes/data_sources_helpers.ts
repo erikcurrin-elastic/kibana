@@ -34,6 +34,19 @@ import type {
 import { DATA_SOURCE_SAVED_OBJECT_TYPE, type DataSourceAttributes } from '../saved_objects';
 import type { DeleteDataSourceAndRelatedResourcesResult } from '../../common';
 
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function buildSourceNamespace(name: string, type: string): string {
+  return `${slugify(name)}.source.${type}`;
+}
+
 interface CreateDataSourceAndResourcesParams {
   name: string;
   type: string;
@@ -48,13 +61,14 @@ interface CreateDataSourceAndResourcesParams {
   agentBuilder: DataSourcesServerStartDependencies['agentBuilder'];
 }
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFD') // split accented characters
-    .replace(/[\u0300-\u036f]/g, '') // remove accents
-    .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumerics with -
-    .replace(/^-+|-+$/g, ''); // trim leading/trailing -
+/**
+ * Extracts the workflow action name from workflow YAML (last segment of the name field).
+ * Template workflows use names like "sources.notion.search"; we use the action part.
+ */
+function getWorkflowBaseName(content: string): string {
+  const nameMatch = content.match(/^name:\s*['"]?([^'"\n]+)['"]?/m);
+  const originalName = nameMatch?.[1]?.trim() ?? 'workflow';
+  return originalName.split('.').pop() || originalName;
 }
 
 /**
@@ -172,7 +186,7 @@ export async function createDataSourceAndRelatedResources(
         finalStackConnectorId,
         stackConnectorConfig.importedTools,
         name,
-        `${type}.${slugify(name)}`,
+        buildSourceNamespace(name, type),
         logger
       );
       toolIds.push(...importedToolIds);
@@ -188,15 +202,13 @@ export async function createDataSourceAndRelatedResources(
 
   logger.info(`Creating workflows and tools for data source '${name}'`);
 
+  const namespace = buildSourceNamespace(name, type);
+
   const workflowAndToolResults = await Promise.all(
     workflowInfos.map(async (workflowInfo) => {
-      // Extract workflow name from YAML; use convention source.<type>.<action> to avoid collisions
-      const nameMatch = workflowInfo.content.match(/^name:\s*['"]?([^'"\n]+)['"]?/m);
-      const originalName = nameMatch?.[1]?.trim() ?? 'workflow';
-      const workflowBaseName = originalName.split('.').pop() || originalName;
-      const canonicalName = `source.${type}.${workflowBaseName}`;
-      const prefixedName = `${slugify(name)}.${canonicalName}`;
-      const prefixedContent = updateYamlField(workflowInfo.content, 'name', prefixedName);
+      const workflowBaseName = getWorkflowBaseName(workflowInfo.content);
+      const workflowName = `${namespace}.${workflowBaseName}`;
+      const prefixedContent = updateYamlField(workflowInfo.content, 'name', workflowName);
 
       const workflow = await workflowManagement.management.createWorkflow(
         { yaml: prefixedContent },
@@ -214,9 +226,8 @@ export async function createDataSourceAndRelatedResources(
             ? parsedWorkflow.description
             : `Workflow tool for ${type} data source`;
 
-        // Tool ID structure: type.data_source_name.workflow_base_name
         const tool = await toolRegistry.create({
-          id: `${type}.${slugify(name)}.${workflowBaseName}`,
+          id: workflowName,
           type: ToolType.workflow,
           description: workflowDescription,
           tags: ['data-source', type],
