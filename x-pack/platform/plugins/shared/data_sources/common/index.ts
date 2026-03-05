@@ -11,6 +11,7 @@ export {
   DATA_SOURCES_SHORT_TITLE,
   BULK_DELETE_API_ROUTE,
 } from './constants';
+export { buildSourceNamespace } from './source_namespace';
 export type {
   DeleteDataSourceAndRelatedResourcesResult,
   BulkDeleteDataSourceResult,

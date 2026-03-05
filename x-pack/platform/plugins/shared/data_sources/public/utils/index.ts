@@ -6,3 +6,4 @@
  */
 
 export { getConnectorIcon, getConnectorIconType } from './get_connector_icon';
+export { buildSourceNamespace } from '../../common';

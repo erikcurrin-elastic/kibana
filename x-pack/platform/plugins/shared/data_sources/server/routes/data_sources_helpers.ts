@@ -32,20 +32,7 @@ import type {
   DataSourcesServerStartDependencies,
 } from '../types';
 import { DATA_SOURCE_SAVED_OBJECT_TYPE, type DataSourceAttributes } from '../saved_objects';
-import type { DeleteDataSourceAndRelatedResourcesResult } from '../../common';
-
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function buildSourceNamespace(name: string, type: string): string {
-  return `${slugify(name)}.source.${type}`;
-}
+import { type DeleteDataSourceAndRelatedResourcesResult, buildSourceNamespace } from '../../common';
 
 interface CreateDataSourceAndResourcesParams {
   name: string;
