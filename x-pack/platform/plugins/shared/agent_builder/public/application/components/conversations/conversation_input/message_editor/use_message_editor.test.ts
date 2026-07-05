@@ -155,4 +155,41 @@ describe('useMessageEditor handleCommandSelect', () => {
     // non-breaking space is appended so typing can continue after the badge.
     expect(stripZeroWidthSpaces(div.textContent ?? '')).toBe(`@connector/workday${NBSP}`);
   });
+
+  it('with consumedLength, also holds for a Skill query committed via Escape', () => {
+    // e.g. typing "use the /no-match skill for" and hitting Escape should
+    // leave the cursor at the end of "for", not snap back before "skill for".
+    const { result } = renderHook(() => useMessageEditor());
+    attachRef(result.current.messageEditor, div);
+
+    div.textContent = 'use the /no-match skill for';
+    setCursorAtEnd(div);
+
+    act(() => {
+      result.current.messageEditor.onChange();
+    });
+
+    const activeCommand = result.current.messageEditor.commandMatch.activeCommand;
+    expect(activeCommand?.command.id).toBe(CommandId.Skill);
+    expect(activeCommand?.query).toBe('no-match skill for');
+
+    act(() => {
+      result.current.messageEditor.handleCommandSelect({
+        commandId: CommandId.Skill,
+        label: 'no-match',
+        id: '',
+        metadata: {},
+        matched: false,
+        consumedLength: 'no-match'.length,
+      });
+    });
+
+    const badge = div.querySelector('[data-command-badge]');
+    expect(badge).not.toBeNull();
+    expect(badge!.nextSibling?.textContent).toBe(' skill for');
+
+    const range = window.getSelection()!.getRangeAt(0);
+    expect(range.startContainer).toBe(badge!.nextSibling);
+    expect(range.startOffset).toBe(' skill for'.length);
+  });
 });
