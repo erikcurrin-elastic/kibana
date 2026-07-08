@@ -17,12 +17,6 @@ jest.mock('../../../../hooks/use_context_engine_enabled', () => ({
 jest.mock('../../../../hooks/use_experimental_features', () => ({
   useExperimentalFeatures: () => true,
 }));
-jest.mock('../../../../hooks/use_conversation', () => ({
-  useAgentId: () => 'test-agent-id',
-}));
-jest.mock('../../../../hooks/skills/use_agent_skills', () => ({
-  useAgentSkills: () => ({ skills: [], isLoading: false, error: null, isError: false }),
-}));
 jest.mock('./command_menu/use_command_menu_prefetch', () => ({
   useCommandMenuPrefetch: () => jest.fn(),
 }));
@@ -53,24 +47,6 @@ describe('useMessageEditor handleCommandSelect', () => {
 
   afterEach(() => {
     document.body.removeChild(div);
-  });
-
-  it('leaves an active mention alone once its query contains a space, so text after it stays untouched', () => {
-    // A "type/name" SML mention can never contain a space, so matchCommand
-    // ends it as soon as one appears — there's no longer a badge to commit
-    // partway through a sentence like this.
-    const { result } = renderHook(() => useMessageEditor());
-    attachRef(result.current.messageEditor, div);
-
-    div.textContent = 'look in @connector/workday is the best';
-    setCursorAtEnd(div);
-
-    act(() => {
-      result.current.messageEditor.onChange();
-    });
-
-    expect(result.current.messageEditor.commandMatch.isActive).toBe(false);
-    expect(div.textContent).toBe('look in @connector/workday is the best');
   });
 
   it('consumes the full query and inserts a trailing space', () => {

@@ -8,7 +8,6 @@
 import { matchCommand } from './command_matcher';
 import { sortedCommandDefinitions } from './command_definitions';
 import { CommandId } from './types';
-import type { CommandDefinition } from './types';
 
 const allCommands = sortedCommandDefinitions;
 
@@ -110,13 +109,11 @@ describe('matchCommand', () => {
   });
 
   describe('active command stickiness', () => {
-    it('drops a sticky "@" command once its query contains a space, falling back to "/"', () => {
-      // Unlike "/", an "@" (SML) query can never legitimately contain a
-      // space, so stickiness gives up and normal matching resumes.
+    it('keeps the active "@" command active even when "/" appears closer to the cursor', () => {
       const result = matchCommand('@foo /bar', allCommands, CommandId.Sml);
       expect(result.isActive).toBe(true);
-      expect(result.activeCommand?.command.id).toBe(CommandId.Skill);
-      expect(result.activeCommand?.query).toBe('bar');
+      expect(result.activeCommand?.command.id).toBe(CommandId.Sml);
+      expect(result.activeCommand?.query).toBe('foo /bar');
     });
 
     it('keeps the active "/" command active even when "@" appears closer to the cursor', () => {
@@ -137,71 +134,6 @@ describe('matchCommand', () => {
       const result = matchCommand('@foo /bar', allCommands);
       expect(result.activeCommand?.command.id).toBe(CommandId.Skill);
       expect(result.activeCommand?.query).toBe('bar');
-    });
-  });
-
-  describe('commands that disallow spaces in the query (e.g. "@")', () => {
-    it('stays active while the query has no space', () => {
-      const result = matchCommand('@connector/no_match', allCommands);
-      expect(result.isActive).toBe(true);
-      expect(result.activeCommand?.command.id).toBe(CommandId.Sml);
-      expect(result.activeCommand?.query).toBe('connector/no_match');
-    });
-
-    it('deactivates once a trailing space is typed', () => {
-      const result = matchCommand('@connector/no_match ', allCommands);
-      expect(result.isActive).toBe(false);
-    });
-
-    it('deactivates once more text follows the trailing space', () => {
-      const result = matchCommand('@connector/no_match and more', allCommands);
-      expect(result.isActive).toBe(false);
-    });
-
-    it('stays deactivated even when the command was previously active (sticky)', () => {
-      const result = matchCommand('@connector/no_match ', allCommands, CommandId.Sml);
-      expect(result.isActive).toBe(false);
-    });
-  });
-
-  describe('allowsSpaceInQuery as a per-keystroke predicate', () => {
-    const dynamicCommand: CommandDefinition = {
-      id: CommandId.Skill,
-      scheme: 'skill',
-      sequence: '/',
-      name: 'Skill',
-      menuComponent: sortedCommandDefinitions[0].menuComponent,
-      allowsSpaceInQuery: (query: string) => query.startsWith('Data '),
-    };
-
-    it('stays active when the predicate returns true for the current query', () => {
-      const result = matchCommand('/Data Export', [dynamicCommand]);
-      expect(result.isActive).toBe(true);
-      expect(result.activeCommand?.query).toBe('Data Export');
-    });
-
-    it('deactivates when the predicate returns false for the current query', () => {
-      const result = matchCommand('/Summarize this', [dynamicCommand]);
-      expect(result.isActive).toBe(false);
-    });
-
-    it('is re-evaluated fresh each call — sticky tracking does not bypass it', () => {
-      const exactMatchCommand: CommandDefinition = {
-        ...dynamicCommand,
-        allowsSpaceInQuery: (query: string) => query === 'Data Export',
-      };
-
-      const stillPlausible = matchCommand('/Data Export', [exactMatchCommand], CommandId.Skill);
-      expect(stillPlausible.isActive).toBe(true);
-
-      // Same sticky activeCommandId, but the query has since grown past what
-      // the predicate accepts — it must drop out, not stay active forever.
-      const droppedOut = matchCommand(
-        '/Data Export gone wrong',
-        [exactMatchCommand],
-        CommandId.Skill
-      );
-      expect(droppedOut.isActive).toBe(false);
     });
   });
 

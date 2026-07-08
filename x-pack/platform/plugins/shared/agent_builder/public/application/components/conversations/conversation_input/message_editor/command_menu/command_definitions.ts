@@ -9,13 +9,10 @@ import { useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import { Skills } from './menus/skills';
 import { Sml } from './menus/sml';
-import { canSkillQueryContinueAfterSpace } from './menus/skills/skill_space_boundary';
 import type { CommandDefinition } from './types';
 import { CommandId } from './types';
 import { useContextEngineEnabled } from '../../../../../hooks/use_context_engine_enabled';
 import { useExperimentalFeatures } from '../../../../../hooks/use_experimental_features';
-import { useAgentSkills } from '../../../../../hooks/skills/use_agent_skills';
-import { useAgentId } from '../../../../../hooks/use_conversation';
 
 const semanticKnowledgeCommandName = i18n.translate(
   'xpack.agentBuilder.conversationInput.commandMenu.semanticKnowledgeCommandName',
@@ -24,17 +21,7 @@ const semanticKnowledgeCommandName = i18n.translate(
 
 // When adding a new command, also add its data prefetch hook to use_command_menu_prefetch.ts
 const COMMAND_DEFINITIONS: readonly CommandDefinition[] = [
-  {
-    id: CommandId.Skill,
-    scheme: 'skill',
-    sequence: '/',
-    name: 'Skill',
-    menuComponent: Skills,
-    // Overridden per-render in useAvailableCommandDefinitions with a
-    // predicate that checks live skill names; this default only applies
-    // where sortedCommandDefinitions is used directly (e.g. getCommandDefinition).
-    allowsSpaceInQuery: true,
-  },
+  { id: CommandId.Skill, scheme: 'skill', sequence: '/', name: 'Skill', menuComponent: Skills },
   {
     id: CommandId.Sml,
     scheme: 'sml',
@@ -70,23 +57,11 @@ export const useAvailableCommandDefinitions = (): readonly CommandDefinition[] =
   const isContextEngineEnabled = useContextEngineEnabled();
   const isExperimentalEnabled = useExperimentalFeatures();
   const isSmlEnabled = isContextEngineEnabled && isExperimentalEnabled;
-  const agentId = useAgentId();
-  const { skills } = useAgentSkills({ agentId });
 
   return useMemo(() => {
-    const definitions = sortedCommandDefinitions.map((definition) =>
-      definition.id === CommandId.Skill
-        ? {
-            ...definition,
-            // A skill name can contain spaces, so a space only keeps the
-            // mention alive while it could still be the start of a real one.
-            allowsSpaceInQuery: (query: string) => canSkillQueryContinueAfterSpace(query, skills),
-          }
-        : definition
-    );
     if (isSmlEnabled) {
-      return definitions;
+      return sortedCommandDefinitions;
     }
-    return definitions.filter((c) => !c.experimental);
-  }, [isSmlEnabled, skills]);
+    return sortedCommandDefinitions.filter((c) => !c.experimental);
+  }, [isSmlEnabled]);
 };
