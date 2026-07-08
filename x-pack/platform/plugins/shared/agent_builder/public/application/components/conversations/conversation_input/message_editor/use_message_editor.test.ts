@@ -17,6 +17,12 @@ jest.mock('../../../../hooks/use_context_engine_enabled', () => ({
 jest.mock('../../../../hooks/use_experimental_features', () => ({
   useExperimentalFeatures: () => true,
 }));
+jest.mock('../../../../hooks/use_conversation', () => ({
+  useAgentId: () => 'test-agent-id',
+}));
+jest.mock('../../../../hooks/skills/use_agent_skills', () => ({
+  useAgentSkills: () => ({ skills: [], isLoading: false, error: null, isError: false }),
+}));
 jest.mock('./command_menu/use_command_menu_prefetch', () => ({
   useCommandMenuPrefetch: () => jest.fn(),
 }));

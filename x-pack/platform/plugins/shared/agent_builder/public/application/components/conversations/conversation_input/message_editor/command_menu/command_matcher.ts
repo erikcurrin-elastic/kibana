@@ -61,8 +61,14 @@ export const matchCommand = (
     // A value like an SML "type/name" mention can never contain whitespace,
     // so once a space shows up the mention is done — without this, an
     // unresolved mention silently keeps growing to swallow everything typed
-    // after it instead of ending like a normal word would.
-    if (!command.allowsSpaceInQuery && /\s/.test(query)) {
+    // after it instead of ending like a normal word would. Some commands
+    // (Skills) only tolerate a space while it's still plausible — a
+    // predicate decides that per keystroke instead of a fixed `true`.
+    const allowsSpace =
+      typeof command.allowsSpaceInQuery === 'function'
+        ? command.allowsSpaceInQuery(query)
+        : command.allowsSpaceInQuery;
+    if (!allowsSpace && /\s/.test(query)) {
       continue;
     }
 

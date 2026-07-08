@@ -57,11 +57,14 @@ export interface CommandDefinition {
   /** When true, this command is only available when experimental features are enabled */
   readonly experimental?: boolean;
   /**
-   * When true, a space in the query keeps the command active (e.g. Skills'
-   * free-text search). Defaults to false: a space ends the command, since a
-   * value like an SML "type/name" mention can never contain one.
+   * Whether a space in the query keeps the command active. Defaults to
+   * false: a space ends the command, since a value like an SML "type/name"
+   * mention can never contain one. Skills' free-text search allows spaces,
+   * but only while the word before the space could still be the start of a
+   * real (possibly multi-word) skill name — pass a predicate to decide that
+   * dynamically per keystroke instead of a fixed `true`.
    */
-  readonly allowsSpaceInQuery?: boolean;
+  readonly allowsSpaceInQuery?: boolean | ((query: string) => boolean);
 }
 
 /**

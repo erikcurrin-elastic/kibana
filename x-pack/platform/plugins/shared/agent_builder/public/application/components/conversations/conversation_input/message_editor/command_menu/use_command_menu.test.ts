@@ -17,6 +17,19 @@ jest.mock('../../../../../hooks/use_experimental_features', () => ({
   useExperimentalFeatures: () => true,
 }));
 
+jest.mock('../../../../../hooks/use_conversation', () => ({
+  useAgentId: () => 'test-agent-id',
+}));
+
+jest.mock('../../../../../hooks/skills/use_agent_skills', () => ({
+  useAgentSkills: () => ({
+    skills: [{ name: 'summarize document' }],
+    isLoading: false,
+    error: null,
+    isError: false,
+  }),
+}));
+
 jest.mock('./utils/get_text_before_cursor');
 const mockGetTextBeforeCursor = jest.mocked(getTextBeforeCursor);
 
@@ -61,7 +74,7 @@ describe('useCommandMenuCommand', () => {
     expect(result.current.match.activeCommand?.query).toBe('sum');
   });
 
-  it('keeps command active when query contains whitespace', () => {
+  it('keeps command active when the query with a space still prefixes a real skill name', () => {
     const { result } = renderHook(() => useCommandMenu());
 
     mockGetTextBeforeCursor.mockReturnValue('/summarize');
@@ -70,12 +83,29 @@ describe('useCommandMenuCommand', () => {
     });
     expect(result.current.match.isActive).toBe(true);
 
+    // The mocked skill catalog has "summarize document" — still plausible.
     mockGetTextBeforeCursor.mockReturnValue('/summarize ');
     act(() => {
       result.current.checkInputForCommand(mockElement);
     });
     expect(result.current.match.isActive).toBe(true);
     expect(result.current.match.activeCommand?.query).toBe('summarize ');
+  });
+
+  it('deactivates once the query with a space no longer matches any real skill name', () => {
+    const { result } = renderHook(() => useCommandMenu());
+
+    mockGetTextBeforeCursor.mockReturnValue('/nosuchskill');
+    act(() => {
+      result.current.checkInputForCommand(mockElement);
+    });
+    expect(result.current.match.isActive).toBe(true);
+
+    mockGetTextBeforeCursor.mockReturnValue('/nosuchskill and more');
+    act(() => {
+      result.current.checkInputForCommand(mockElement);
+    });
+    expect(result.current.match.isActive).toBe(false);
   });
 
   it('dismiss() deactivates the current command', () => {

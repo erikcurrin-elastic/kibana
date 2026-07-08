@@ -8,6 +8,7 @@
 import { matchCommand } from './command_matcher';
 import { sortedCommandDefinitions } from './command_definitions';
 import { CommandId } from './types';
+import type { CommandDefinition } from './types';
 
 const allCommands = sortedCommandDefinitions;
 
@@ -160,6 +161,47 @@ describe('matchCommand', () => {
     it('stays deactivated even when the command was previously active (sticky)', () => {
       const result = matchCommand('@connector/no_match ', allCommands, CommandId.Sml);
       expect(result.isActive).toBe(false);
+    });
+  });
+
+  describe('allowsSpaceInQuery as a per-keystroke predicate', () => {
+    const dynamicCommand: CommandDefinition = {
+      id: CommandId.Skill,
+      scheme: 'skill',
+      sequence: '/',
+      name: 'Skill',
+      menuComponent: sortedCommandDefinitions[0].menuComponent,
+      allowsSpaceInQuery: (query: string) => query.startsWith('Data '),
+    };
+
+    it('stays active when the predicate returns true for the current query', () => {
+      const result = matchCommand('/Data Export', [dynamicCommand]);
+      expect(result.isActive).toBe(true);
+      expect(result.activeCommand?.query).toBe('Data Export');
+    });
+
+    it('deactivates when the predicate returns false for the current query', () => {
+      const result = matchCommand('/Summarize this', [dynamicCommand]);
+      expect(result.isActive).toBe(false);
+    });
+
+    it('is re-evaluated fresh each call — sticky tracking does not bypass it', () => {
+      const exactMatchCommand: CommandDefinition = {
+        ...dynamicCommand,
+        allowsSpaceInQuery: (query: string) => query === 'Data Export',
+      };
+
+      const stillPlausible = matchCommand('/Data Export', [exactMatchCommand], CommandId.Skill);
+      expect(stillPlausible.isActive).toBe(true);
+
+      // Same sticky activeCommandId, but the query has since grown past what
+      // the predicate accepts — it must drop out, not stay active forever.
+      const droppedOut = matchCommand(
+        '/Data Export gone wrong',
+        [exactMatchCommand],
+        CommandId.Skill
+      );
+      expect(droppedOut.isActive).toBe(false);
     });
   });
 

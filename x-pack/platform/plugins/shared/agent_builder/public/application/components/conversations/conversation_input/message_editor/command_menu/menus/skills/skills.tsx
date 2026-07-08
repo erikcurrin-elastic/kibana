@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { forwardRef, useCallback, useMemo } from 'react';
+import React, { forwardRef, useMemo } from 'react';
 import { css } from '@emotion/react';
 import { EuiText, useEuiTheme } from '@elastic/eui';
 import { useAgentSkills } from '../../../../../../../hooks/skills/use_agent_skills';
@@ -14,7 +14,6 @@ import type { CommandMenuComponentProps, CommandMenuHandle } from '../../types';
 import { CommandId } from '../../types';
 import { CommandMenuList } from '../components/command_menu_list';
 import type { CommandMenuListOption } from '../components/command_menu_list';
-import { capAtFirstSpace, buildNoMatchSelection } from '../../utils/no_match_badge';
 
 const SKILLS_MENU_WIDTH = 350;
 
@@ -65,35 +64,19 @@ export const Skills = forwardRef<CommandMenuHandle, CommandMenuComponentProps>(
         });
     }, [skills, query, skillRowStyles]);
 
-    const noMatch = query.length > 0 && options.length === 0 && !isLoading;
-
-    const handleSelect = useCallback(
-      (option: CommandMenuListOption) => {
-        onSelect({
-          commandId: CommandId.Skill,
-          label: option.label,
-          id: option.key,
-          metadata: {},
-        });
-      },
-      [onSelect]
-    );
-
-    const handleCommitInvalid = useCallback(() => {
-      // Unlike a connector name, a skill name can contain spaces, so this is
-      // only a best-effort guess — Escape (not Space) triggers it since Space
-      // can't mean "done typing" here the way it does for a connector.
-      const consumedQuery = capAtFirstSpace(query);
-      onSelect(buildNoMatchSelection(CommandId.Skill, consumedQuery));
-    }, [onSelect, query]);
-
     return (
       <CommandMenuList
         ref={ref}
         options={options}
         isLoading={isLoading}
-        onSelect={handleSelect}
-        onEscapeNoMatch={noMatch ? handleCommitInvalid : undefined}
+        onSelect={(option: CommandMenuListOption) => {
+          onSelect({
+            commandId: CommandId.Skill,
+            label: option.label,
+            id: option.key,
+            metadata: {},
+          });
+        }}
         width={SKILLS_MENU_WIDTH}
         data-test-subj="skillsMenu"
       />
