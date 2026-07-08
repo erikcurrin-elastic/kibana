@@ -21,7 +21,6 @@ import type { CommandMenuHandle } from './command_menu';
 import {
   COMMAND_BADGE_ATTRIBUTE,
   COMMAND_BADGE_LABEL_ATTRIBUTE,
-  COMMAND_BADGE_MATCHED_ATTRIBUTE,
   COMMAND_BADGE_MAX_WIDTH_CH,
   isElementCommandBadge,
 } from './command_badge';
@@ -165,11 +164,6 @@ export const MessageEditor: React.FC<MessageEditorProps> = ({
       min-width: 0;
       ${euiTextTruncate('100%')}
     }
-    [${COMMAND_BADGE_ATTRIBUTE}][${COMMAND_BADGE_MATCHED_ATTRIBUTE}='false'] {
-      color: inherit;
-      background-color: transparent;
-      padding: 0;
-    }
   `;
   const editorStyles = [
     heightStyles,
@@ -211,15 +205,6 @@ export const MessageEditor: React.FC<MessageEditorProps> = ({
         onBlur={messageEditor.dismissActionMenu}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
-        onClick={(event) => {
-          const badge = (event.target as HTMLElement).closest(
-            `[${COMMAND_BADGE_ATTRIBUTE}][${COMMAND_BADGE_MATCHED_ATTRIBUTE}='false']`
-          );
-          if (badge instanceof HTMLElement) {
-            event.preventDefault();
-            messageEditor.unwrapUnmatchedBadge(badge);
-          }
-        }}
         onPaste={(event) => {
           event.preventDefault();
 
@@ -267,20 +252,14 @@ export const MessageEditor: React.FC<MessageEditorProps> = ({
           // If no badges, let the browser handle cut natively
         }}
         onKeyDown={(event) => {
-          // Let the active menu claim Escape first (e.g. to commit a
-          // no-match badge for a skill query); otherwise fall back to
-          // just dismissing the menu, as Escape always did before.
-          if (commandMatch.isActive && commandMenuRef.current?.isKeyDownEventHandled(event)) {
-            commandMenuRef.current.handleKeyDown(event);
-            event.preventDefault();
-            if (event.key === keys.ESCAPE) {
-              event.stopPropagation();
-            }
-            return;
-          }
           if (event.key === keys.ESCAPE) {
             event.stopPropagation();
             messageEditor.dismissActionMenu();
+            return;
+          }
+          if (commandMatch.isActive && commandMenuRef.current?.isKeyDownEventHandled(event)) {
+            commandMenuRef.current.handleKeyDown(event);
+            event.preventDefault();
             return;
           }
           if (!event.shiftKey && event.key === keys.ENTER && !isComposing) {

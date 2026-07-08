@@ -60,10 +60,6 @@ interface CommandMenuListProps {
   readonly 'data-test-subj'?: string;
   /** When true, Space also selects the highlighted option, like Enter. */
   readonly spaceSelection?: boolean;
-  /** Called instead of selecting when Space is pressed with no `spaceSelection`. */
-  readonly onSpaceNoMatch?: () => void;
-  /** Called when Escape is pressed with no candidates, instead of just dismissing. */
-  readonly onEscapeNoMatch?: () => void;
 }
 
 export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProps>(
@@ -75,8 +71,6 @@ export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProp
       width: menuWidth = MENU_WIDTH,
       'data-test-subj': dataTestSubj = 'commandMenuList',
       spaceSelection,
-      onSpaceNoMatch,
-      onEscapeNoMatch,
     },
     ref
   ) => {
@@ -87,7 +81,10 @@ export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProp
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const optionKeysSignature = JSON.stringify(options.map((option) => option.key));
+    const optionKeysSignature = useMemo(
+      () => options.map((option) => option.key).join('|'),
+      [options]
+    );
     useEffect(() => {
       setActiveIndex(0);
     }, [optionKeysSignature]);
@@ -132,10 +129,7 @@ export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProp
         ];
         // Always claim Space, even with zero options: results can lag a
         // keystroke behind, and a leaked space would type as plain text.
-        if (event.key === keys.SPACE && (spaceSelection || onSpaceNoMatch)) {
-          return true;
-        }
-        if (event.key === keys.ESCAPE && onEscapeNoMatch) {
+        if (event.key === keys.SPACE && spaceSelection) {
           return true;
         }
         return handledKeys.includes(event.key);
@@ -147,14 +141,8 @@ export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProp
           handleSetActive((prev) => Math.max(prev - 1, 0));
         } else if (event.key === keys.ENTER || event.key === keys.TAB) {
           handleSelectOption();
-        } else if (event.key === keys.SPACE) {
-          if (spaceSelection) {
-            handleSelectOption();
-          } else if (onSpaceNoMatch) {
-            onSpaceNoMatch();
-          }
-        } else if (event.key === keys.ESCAPE) {
-          onEscapeNoMatch?.();
+        } else if (event.key === keys.SPACE && spaceSelection) {
+          handleSelectOption();
         }
       },
     }));
