@@ -471,9 +471,7 @@ describe('generateExecutorFunction', () => {
       });
 
       const opts = makeExecOptions({ subAction: 'testAction', subActionParams: {} });
-      await expect(
-        executor({ ...opts, config: { selectedActions: [] } })
-      ).rejects.toThrow(
+      await expect(executor({ ...opts, config: { selectedActions: [] } })).rejects.toThrow(
         "[Action][ExternalService] Action 'testAction' is not enabled for this connector."
       );
     });

@@ -80,8 +80,7 @@ export function getConnectorInstancesForType(
       if (subAction) {
         instances = instances.filter(
           ({ config }) =>
-            !Array.isArray(config?.selectedActions) ||
-            config.selectedActions.includes(subAction)
+            !Array.isArray(config?.selectedActions) || config.selectedActions.includes(subAction)
         );
       }
 
