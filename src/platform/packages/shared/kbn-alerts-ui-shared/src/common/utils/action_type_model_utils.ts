@@ -122,14 +122,19 @@ export function transformSpecToActionTypeModel(
     getHideInUi: (_actionTypes: ActionType[]) =>
       shouldHideWorkflowsOnlyConnector(spec.metadata.supportedFeatureIds, uiSettings),
     actionConnectorFields: lazy(async () => {
-      const { generateFormFields } = await import(
-        /* webpackPrefetch: true */ '@kbn/response-ops-form-generator'
-      );
+      const [{ generateFormFields }, { ConnectorActionSelector }, { EuiSpacer }, React] =
+        await Promise.all([
+          import(/* webpackPrefetch: true */ '@kbn/response-ops-form-generator'),
+          import('../components/connector_action_selector'),
+          import('@elastic/eui'),
+          import('react'),
+        ]);
       const parsedZodSchema = fromConnectorSpecSchema(spec.schema);
       if (!parsedZodSchema) {
         throw new Error(`Invalid connector spec schema for "${spec.metadata.id}"`);
       }
       const connectorZodSchema: ConnectorZodSchema = parsedZodSchema;
+      const specActions = spec.actions ?? [];
       function SpecConnectorFormFields({ readOnly, isEdit, authMode }: ActionConnectorFieldsProps) {
         const narrowedSchema = useMemo(
           () => narrowSecretsSchemaForAuthMode(connectorZodSchema, authMode),
@@ -137,11 +142,21 @@ export function transformSpecToActionTypeModel(
 
           [authMode]
         );
-        return generateFormFields({
+        const configFields = generateFormFields({
           schema: narrowedSchema,
           formConfig: { disabled: readOnly, isEdit },
           metaFunctions: { getMeta, setMeta },
         });
+        if (specActions.length <= 1) {
+          return configFields;
+        }
+        return React.createElement(
+          React.Fragment,
+          null,
+          configFields,
+          React.createElement(EuiSpacer, { size: 'm' }),
+          React.createElement(ConnectorActionSelector, { actions: specActions, readOnly })
+        );
       }
       return { default: SpecConnectorFormFields };
     }),
@@ -165,15 +180,20 @@ export function transformSpecToActionTypeModel(
 function createConnectorFormSerializer() {
   return (formData: Record<string, unknown>) => {
     const secrets = formData?.secrets as Record<string, unknown> | undefined;
-    if (!secrets?.authType) {
-      return formData;
+    const config = formData?.config as Record<string, unknown> | undefined;
+
+    const updatedConfig: Record<string, unknown> = {
+      ...(config ?? {}),
+      ...(secrets?.authType ? { authType: secrets.authType } : {}),
+    };
+
+    // null is the form-internal "all actions" sentinel; strip it before the API
+    // call so the saved config has no selectedActions key (meaning all allowed).
+    if (updatedConfig.selectedActions === null) {
+      delete updatedConfig.selectedActions;
     }
 
-    const config = formData?.config as Record<string, unknown> | undefined;
-    return {
-      ...formData,
-      config: { ...config, authType: secrets.authType },
-    };
+    return { ...formData, config: updatedConfig };
   };
 }
 

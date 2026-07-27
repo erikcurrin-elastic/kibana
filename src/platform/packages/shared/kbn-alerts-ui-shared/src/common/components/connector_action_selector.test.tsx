@@ -102,4 +102,31 @@ describe('ConnectorActionSelectorUI — cross-page selection', () => {
     // Counter should now show 3 (cross-page total).
     expect(screen.getByText('3 selected')).toBeInTheDocument();
   });
+
+  it('selected items remain selected when search filters them out of view', async () => {
+    const user = userEvent.setup();
+
+    render(<Fixture initialSelected={['action01']} />);
+
+    expect(rowCheckbox('action01')).toBeChecked();
+
+    // Type into the search box — action01 is filtered out.
+    await user.type(screen.getByTestId('connectorActionSelectorSearch'), 'action12');
+
+    // Wait for debounce to apply the filter.
+    await new Promise((r) => setTimeout(r, 350));
+
+    // action12 is visible; action01 is not.
+    expect(screen.queryByTestId('connectorActionSelectorRow-action01')).toBeNull();
+    expect(screen.getByTestId('connectorActionSelectorRow-action12')).toBeTruthy();
+
+    // Selection counter still shows action01 selected (it was not deselected by the filter).
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // Clear the search — action01 should be checked again.
+    await user.clear(screen.getByTestId('connectorActionSelectorSearch'));
+    await new Promise((r) => setTimeout(r, 350));
+
+    expect(rowCheckbox('action01')).toBeChecked();
+  });
 });

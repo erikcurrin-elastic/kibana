@@ -15,7 +15,13 @@ export const generateConfigSchema = (
   schema: ConnectorSpec['schema']
 ): ValidatorType<ActionTypeConfig> => {
   const authType = z.string().optional();
-  const configSchema = schema ? schema.extend({ authType }) : z.object({ authType });
+  // nullish() = string[] | null | undefined. The form uses null as the
+  // "all actions" sentinel; the serializer strips it before saving, but
+  // null is also safe here as the executor treats non-array as "all allowed".
+  const selectedActions = z.array(z.string()).nullish();
+  const configSchema = schema
+    ? schema.extend({ authType, selectedActions })
+    : z.object({ authType, selectedActions });
   const allowedHostsKeys = getAllowedHostsKeysFromShape(configSchema.shape);
 
   return {

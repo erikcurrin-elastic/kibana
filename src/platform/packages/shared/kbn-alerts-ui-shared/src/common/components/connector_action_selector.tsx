@@ -7,20 +7,19 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CriteriaWithPagination,
   type EuiBasicTableColumn,
   type EuiInMemoryTableProps,
-  type EuiSearchBarOnChangeArgs,
   EuiButtonEmpty,
+  EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
   EuiFormRow,
   EuiInMemoryTable,
   EuiPanel,
   EuiRadioGroup,
-  EuiSearchBar,
   EuiSpacer,
   EuiText,
 } from '@elastic/eui';
@@ -61,12 +60,9 @@ export const ConnectorActionSelector: React.FC<ConnectorActionSelectorProps> = (
   readOnly = false,
 }) => {
   const form = useFormContext();
-  // Read the form's reset value so the edit case initializes correctly.
   const formDefault = form.getFieldDefaultValue<string[] | null | undefined>(
     SELECTED_ACTIONS_FIELD
   );
-  // UseField falls back to '' for undefined, which breaks array operations.
-  // Use null as the "all actions" sentinel instead.
   const defaultValue = formDefault !== undefined ? formDefault : null;
 
   const allActionNames = useMemo(() => actions.map((a) => a.name), [actions]);
@@ -108,18 +104,25 @@ export const ConnectorActionSelectorUI: React.FC<UIProps> = ({
 
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [searchQuery, setSearchQuery] = useState<EuiSearchBarOnChangeArgs['query']>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const filteredActions = useMemo(
-    () =>
-      searchQuery
-        ? EuiSearchBar.Query.execute(searchQuery, actions, {
-            defaultFields: ['name', 'description'],
-          })
-        : actions,
-    [actions, searchQuery]
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPageIndex(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const filteredActions = useMemo(() => {
+    if (!searchQuery) return actions;
+    const q = searchQuery.toLowerCase();
+    return actions.filter(
+      (a) => a.name.toLowerCase().includes(q) || (a.description ?? '').toLowerCase().includes(q)
+    );
+  }, [actions, searchQuery]);
 
   const sortedFilteredActions = useMemo(
     () =>
@@ -135,7 +138,7 @@ export const ConnectorActionSelectorUI: React.FC<UIProps> = ({
     [sortedFilteredActions, pageIndex, pageSize]
   );
 
-  // handleSelectAll already set the correct value; skip EUI's reactive onSelectionChange.
+  // After select-all, EUI fires onSelectionChange twice (all items, then page-clamped). Skip the second.
   const isSelectAllActiveRef = useRef(false);
 
   // Refs keep callbacks stable; recreating them triggers EUI's componentDidUpdate → loop.
@@ -232,65 +235,6 @@ export const ConnectorActionSelectorUI: React.FC<UIProps> = ({
   const paginationStart = totalFiltered > 0 ? pageIndex * pageSize + 1 : 0;
   const paginationEnd = Math.min((pageIndex + 1) * pageSize, totalFiltered);
 
-  const tableHeader =
-    actions.length > 0 ? (
-      <EuiFlexGroup gutterSize="s" alignItems="center">
-        <EuiFlexItem grow>
-          {totalFiltered > 0 && (
-            <EuiText size="xs" color="subdued">
-              {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.showingCount', {
-                defaultMessage: 'Showing {start}–{end} of {total}',
-                values: { start: paginationStart, end: paginationEnd, total: totalFiltered },
-              })}
-            </EuiText>
-          )}
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButtonEmpty
-            size="xs"
-            iconType="pagesSelect"
-            iconSide="left"
-            onClick={handleSelectAll}
-            disabled={readOnly}
-            data-test-subj="connectorActionSelectorSelectAll"
-          >
-            {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.selectAll', {
-              defaultMessage: 'Select all',
-            })}
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-        {selectedCount > 0 && (
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup gutterSize="none" alignItems="center">
-              <EuiFlexItem grow={false}>
-                <EuiText size="xs">
-                  {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.selectedCount', {
-                    defaultMessage: '{count} selected',
-                    values: { count: selectedCount },
-                  })}
-                </EuiText>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiButtonEmpty
-                  size="xs"
-                  iconType="cross"
-                  iconSide="left"
-                  color="danger"
-                  onClick={handleClearSelection}
-                  disabled={readOnly}
-                  data-test-subj="connectorActionSelectorClearSelection"
-                >
-                  {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.clearSelection', {
-                    defaultMessage: 'Clear selection',
-                  })}
-                </EuiButtonEmpty>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        )}
-      </EuiFlexGroup>
-    ) : null;
-
   return (
     <>
       <EuiFormRow
@@ -311,26 +255,83 @@ export const ConnectorActionSelectorUI: React.FC<UIProps> = ({
         <>
           <EuiSpacer size="s" />
           <EuiPanel hasBorder paddingSize="m">
+            <EuiFieldSearch
+              placeholder={i18n.translate(
+                'kbn-alerts-ui-shared.connectorActionSelector.searchPlaceholder',
+                { defaultMessage: 'Search actions' }
+              )}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              isClearable
+              fullWidth
+              data-test-subj="connectorActionSelectorSearch"
+            />
+            <EuiSpacer size="s" />
+            <EuiFlexGroup gutterSize="s" alignItems="center">
+              <EuiFlexItem grow>
+                {totalFiltered > 0 && (
+                  <EuiText size="xs" color="subdued">
+                    {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.showingCount', {
+                      defaultMessage: 'Showing {start}–{end} of {total}',
+                      values: { start: paginationStart, end: paginationEnd, total: totalFiltered },
+                    })}
+                  </EuiText>
+                )}
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="pagesSelect"
+                  iconSide="left"
+                  onClick={handleSelectAll}
+                  disabled={readOnly}
+                  data-test-subj="connectorActionSelectorSelectAll"
+                >
+                  {i18n.translate('kbn-alerts-ui-shared.connectorActionSelector.selectAll', {
+                    defaultMessage: 'Select all',
+                  })}
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              {selectedCount > 0 && (
+                <EuiFlexItem grow={false}>
+                  <EuiFlexGroup gutterSize="none" alignItems="center">
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="xs">
+                        {i18n.translate(
+                          'kbn-alerts-ui-shared.connectorActionSelector.selectedCount',
+                          {
+                            defaultMessage: '{count} selected',
+                            values: { count: selectedCount },
+                          }
+                        )}
+                      </EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonEmpty
+                        size="xs"
+                        iconType="cross"
+                        iconSide="left"
+                        color="danger"
+                        onClick={handleClearSelection}
+                        disabled={readOnly}
+                        data-test-subj="connectorActionSelectorClearSelection"
+                      >
+                        {i18n.translate(
+                          'kbn-alerts-ui-shared.connectorActionSelector.clearSelection',
+                          { defaultMessage: 'Clear selection' }
+                        )}
+                      </EuiButtonEmpty>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              )}
+            </EuiFlexGroup>
+            <EuiSpacer size="s" />
             <EuiInMemoryTable
-              items={actions}
+              items={sortedFilteredActions}
               columns={columns}
               itemId="name"
               selection={selection}
-              search={{
-                box: {
-                  incremental: true,
-                  placeholder: i18n.translate(
-                    'kbn-alerts-ui-shared.connectorActionSelector.searchPlaceholder',
-                    { defaultMessage: 'Search actions' }
-                  ),
-                },
-                onChange: ({ query, error }: EuiSearchBarOnChangeArgs) => {
-                  if (!error) {
-                    setSearchQuery(query);
-                    setPageIndex(0);
-                  }
-                },
-              }}
               onTableChange={({ page, sort }: CriteriaWithPagination<ConnectorActionDef>) => {
                 // EuiBasicTable clears selection before firing onChange on page/sort changes.
                 // Capture now and restore below; React batches both calls so this one wins.
@@ -356,7 +357,6 @@ export const ConnectorActionSelectorUI: React.FC<UIProps> = ({
                 pageSize,
               }}
               sorting={{ sort: { field: 'name', direction: sortDirection } }}
-              childrenBetween={tableHeader}
               rowProps={(item) => ({
                 'data-test-subj': `connectorActionSelectorRow-${item.name}`,
               })}
