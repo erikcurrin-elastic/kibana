@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 234" width="240" height="234">
+  <defs>
+    <linearGradient id="aep-express-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#eb1000;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ff4d00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8c00;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background rounded rectangle -->
+  <rect width="240" height="234" rx="42" ry="42" fill="url(#aep-express-gradient)"/>
+  <!-- Adobe "Ae" letterform -->
+  <path fill="#ffffff" d="M 130.5 178 L 114.5 178 L 107 155.5 L 75.5 155.5 L 68 178 L 52 178 L 82 86 L 101 86 Z M 103.5 142.5 L 91.2 105 L 78.5 142.5 Z M 163 178 L 148 178 L 148 110 L 163 110 Z M 155.5 100.5 C 150.2 100.5 146 96.3 146 91 C 146 85.7 150.2 81.5 155.5 81.5 C 160.8 81.5 165 85.7 165 91 C 165 96.3 160.8 100.5 155.5 100.5 Z"/>
+</svg>

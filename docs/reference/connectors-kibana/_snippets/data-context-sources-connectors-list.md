@@ -1,4 +1,5 @@
 **Third-party search**
+* [AEP Express](/reference/connectors-kibana/aep-express-action-type.md): Search templates, create and export designs, and generate images with Adobe Express.
 * [Amazon S3](/reference/connectors-kibana/amazon-s3-action-type.md): List and download content from AWS S3 buckets.
 * [Azure Blob Storage](/reference/connectors-kibana/azure-blob-action-type.md): List containers and blobs, and retrieve blob content from Azure Blob Storage.
 * [BigQuery](/reference/connectors-kibana/bigquery-action-type.md): Run GoogleSQL queries and retrieve results from Google BigQuery.

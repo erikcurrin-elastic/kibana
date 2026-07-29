@@ -77,6 +77,7 @@ toc:
       - file: connectors-kibana/data-context-sources-connectors.md
         children:
           - file: connectors-kibana/abuseipdb-action-type.md
+          - file: connectors-kibana/aep-express-action-type.md
           - file: connectors-kibana/alienvault-otx-action-type.md
           - file: connectors-kibana/amazon-s3-action-type.md
           - file: connectors-kibana/azure-blob-action-type.md

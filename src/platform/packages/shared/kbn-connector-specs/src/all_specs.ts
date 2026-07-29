@@ -8,6 +8,7 @@
  */
 
 export * from './specs/abuseipdb/abuseipdb';
+export * from './specs/aep_express/aep_express';
 export * from './specs/alienvault_otx/alienvault_otx';
 export * from './specs/atlassian/jira-cloud/jira';
 export * from './specs/atlassian/confluence_cloud/confluence';

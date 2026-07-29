@@ -23,6 +23,13 @@ export const ConnectorIconsMap: Map<
   React.LazyExoticComponent<React.ComponentType<ConnectorIconProps>>
 > = new Map([
   [
+    '.aep_express',
+    lazy(
+      () =>
+        import(/* webpackChunkName: "connectorIconAepExpress" */ './specs/aep_express/icon')
+    ),
+  ],
+  [
     '.virustotal',
     lazy(() => import(/* webpackChunkName: "connectorIconVirustotal" */ './specs/virustotal/icon')),
   ],
