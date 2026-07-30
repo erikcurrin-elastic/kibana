@@ -132,7 +132,7 @@ export const OpentextDocumentum: ConnectorSpec = {
         'Returns matching objects with their properties. DQL is SQL-like; use the FOLDER() predicate to scope to a path, ' +
         'CONTAINS() for full-text search, and ENABLE (RETURN_TOP N) to limit results. ' +
         'Always include r_object_id in the SELECT list so results can be passed to getObject or getContent. ' +
-        'Example: SELECT r_object_id, object_name, r_modify_date FROM dm_document WHERE CONTAINS(object_name, \'annual report\') ENABLE (RETURN_TOP 20)',
+        "Example: SELECT r_object_id, object_name, r_modify_date FROM dm_document WHERE CONTAINS(object_name, 'annual report') ENABLE (RETURN_TOP 20)",
       input: SearchInputSchema,
       handler: async (ctx, input: SearchInput) => {
         const { baseUrl, repositoryName: defaultRepo } = ctx.config as {
@@ -222,7 +222,7 @@ export const OpentextDocumentum: ConnectorSpec = {
       description:
         'List all top-level cabinets in the Documentum repository. ' +
         'Cabinets are the root containers in Documentum (analogous to top-level directories). ' +
-        'Returns each cabinet\'s r_object_id, object_name, r_creation_date, and r_modify_date. ' +
+        "Returns each cabinet's r_object_id, object_name, r_creation_date, and r_modify_date. " +
         'Use this to discover the repository structure before browsing folder contents with listFolderContents.',
       input: ListCabinetsInputSchema,
       handler: async (ctx, input: ListCabinetsInput) => {
@@ -288,9 +288,9 @@ export const OpentextDocumentum: ConnectorSpec = {
     '',
     '### Searching with DQL',
     'Use the `search` action with a DQL query. DQL is SQL-like:',
-    '- Full-text search: `SELECT r_object_id, object_name FROM dm_document WHERE CONTAINS(object_name, \'keyword\') ENABLE (RETURN_TOP 20)`',
-    '- Path-scoped search: `SELECT r_object_id, object_name FROM dm_document WHERE FOLDER(\'/Default/Reports\') ENABLE (RETURN_TOP 20)`',
-    '- Date filter: `SELECT r_object_id, object_name, r_modify_date FROM dm_document WHERE r_modify_date > DATE(\'2024-01-01\') ENABLE (RETURN_TOP 20)`',
+    "- Full-text search: `SELECT r_object_id, object_name FROM dm_document WHERE CONTAINS(object_name, 'keyword') ENABLE (RETURN_TOP 20)`",
+    "- Path-scoped search: `SELECT r_object_id, object_name FROM dm_document WHERE FOLDER('/Default/Reports') ENABLE (RETURN_TOP 20)`",
+    "- Date filter: `SELECT r_object_id, object_name, r_modify_date FROM dm_document WHERE r_modify_date > DATE('2024-01-01') ENABLE (RETURN_TOP 20)`",
     '- Always include `r_object_id` in the SELECT list — it is required to call `getObject` or `getContent`.',
     '',
     '### Reading document content',
@@ -301,19 +301,16 @@ export const OpentextDocumentum: ConnectorSpec = {
     '### Common gotchas',
     '- Object IDs (r_object_id) are 16-character hex strings, e.g. 0900001680001234.',
     '- Documentum object types use `dm_` prefix: dm_document, dm_folder, dm_cabinet.',
-    '- The FOLDER() predicate in DQL accepts a cabinet/folder path string (e.g., \'/Default\') or an ID expression.',
+    "- The FOLDER() predicate in DQL accepts a cabinet/folder path string (e.g., '/Default') or an ID expression.",
     '- If search returns no results, verify the repository name and that the user has read access to the target folder.',
     '- Per-action repositoryName overrides the connector default — useful when working with multiple repositories.',
   ].join('\n'),
 
   test: {
-    description: i18n.translate(
-      'core.kibanaConnectorSpecs.opentextDocumentum.test.description',
-      {
-        defaultMessage:
-          'Verifies the connection to the Documentum REST Services by listing available repositories.',
-      }
-    ),
+    description: i18n.translate('core.kibanaConnectorSpecs.opentextDocumentum.test.description', {
+      defaultMessage:
+        'Verifies the connection to the Documentum REST Services by listing available repositories.',
+    }),
     handler: async (ctx) => {
       try {
         const { baseUrl } = ctx.config as { baseUrl: string; repositoryName: string };
