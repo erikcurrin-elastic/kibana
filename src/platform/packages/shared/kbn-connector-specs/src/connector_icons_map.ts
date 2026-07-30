@@ -220,4 +220,8 @@ export const ConnectorIconsMap: Map<
     '.one_drive',
     lazy(() => import(/* webpackChunkName: "connectorIconOneDrive" */ './specs/one_drive/icon')),
   ],
+  [
+    '.marketo',
+    lazy(() => import(/* webpackChunkName: "connectorIconMarketo" */ './specs/marketo/icon')),
+  ],
 ]);
