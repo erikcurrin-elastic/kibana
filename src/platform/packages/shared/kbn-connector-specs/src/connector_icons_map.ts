@@ -220,4 +220,13 @@ export const ConnectorIconsMap: Map<
     '.one_drive',
     lazy(() => import(/* webpackChunkName: "connectorIconOneDrive" */ './specs/one_drive/icon')),
   ],
+  [
+    '.opentext_documentum',
+    lazy(
+      () =>
+        import(
+          /* webpackChunkName: "connectorIconOpentextDocumentum" */ './specs/opentext_documentum/icon'
+        )
+    ),
+  ],
 ]);
