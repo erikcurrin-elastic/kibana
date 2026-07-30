@@ -71,9 +71,9 @@ describe('OpentextDocumentum', () => {
 
   describe('auth', () => {
     it('uses basic authentication', () => {
-      const types = (
-        OpentextDocumentum.auth?.types as Array<string | { type: string }>
-      ).map((t) => (typeof t === 'string' ? t : t.type));
+      const types = (OpentextDocumentum.auth?.types as Array<string | { type: string }>).map((t) =>
+        typeof t === 'string' ? t : t.type
+      );
       expect(types).toContain('basic');
     });
   });
@@ -94,7 +94,7 @@ describe('OpentextDocumentum', () => {
     it('rejects invalid baseUrl', () => {
       if (!OpentextDocumentum.schema) throw new Error('schema not defined');
       expect(() =>
-        OpentextDocumentum.schema!.parse({
+        OpentextDocumentum.schema.parse({
           baseUrl: 'not-a-url',
           repositoryName: 'DOCUMENTUM',
         })
@@ -151,7 +151,9 @@ describe('OpentextDocumentum', () => {
             {
               id: 'entry-1',
               title: 'Annual Report',
-              content: { properties: { r_object_id: '0900001680001234', object_name: 'Annual Report' } },
+              content: {
+                properties: { r_object_id: '0900001680001234', object_name: 'Annual Report' },
+              },
             },
           ],
         },
@@ -245,7 +247,7 @@ describe('OpentextDocumentum', () => {
           headers: { Accept: 'application/json' },
         }
       );
-      expect(result.properties['object_name']).toBe('Q4 Report');
+      expect(result.properties.object_name).toBe('Q4 Report');
     });
 
     it('propagates not found errors', async () => {
@@ -327,8 +329,16 @@ describe('OpentextDocumentum', () => {
       const mockResponse = {
         data: {
           entries: [
-            { id: 'cab-1', title: 'Default', content: { properties: { r_object_id: '0b00001680000001' } } },
-            { id: 'cab-2', title: 'Archive', content: { properties: { r_object_id: '0b00001680000002' } } },
+            {
+              id: 'cab-1',
+              title: 'Default',
+              content: { properties: { r_object_id: '0b00001680000001' } },
+            },
+            {
+              id: 'cab-2',
+              title: 'Archive',
+              content: { properties: { r_object_id: '0b00001680000002' } },
+            },
           ],
         },
         headers: {},
@@ -367,8 +377,16 @@ describe('OpentextDocumentum', () => {
       const mockResponse = {
         data: {
           entries: [
-            { id: 'obj-1', title: 'Q4 Report.pdf', content: { properties: { r_object_type: 'dm_document' } } },
-            { id: 'obj-2', title: 'Sub-folder', content: { properties: { r_object_type: 'dm_folder' } } },
+            {
+              id: 'obj-1',
+              title: 'Q4 Report.pdf',
+              content: { properties: { r_object_type: 'dm_document' } },
+            },
+            {
+              id: 'obj-2',
+              title: 'Sub-folder',
+              content: { properties: { r_object_type: 'dm_folder' } },
+            },
           ],
         },
         headers: {},
