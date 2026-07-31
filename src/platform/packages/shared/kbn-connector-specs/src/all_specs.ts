@@ -26,6 +26,7 @@ export * from './specs/urlvoid/urlvoid';
 export * from './specs/virustotal/virustotal';
 export * from './specs/jina/jina_reader';
 export * from './specs/salesforce/salesforce';
+export * from './specs/salesforce_jinne/salesforce_jinne';
 export * from './specs/servicenow_search/servicenow_search';
 export * from './specs/sharepoint_online/sharepoint_online';
 export * from './specs/slack/slack';

@@ -72,6 +72,15 @@ export const ConnectorIconsMap: Map<
     lazy(() => import(/* webpackChunkName: "connectorIconSalesforce" */ './specs/salesforce/icon')),
   ],
   [
+    '.salesforce_jinne',
+    lazy(
+      () =>
+        import(
+          /* webpackChunkName: "connectorIconSalesforceJinne" */ './specs/salesforce_jinne/icon'
+        )
+    ),
+  ],
+  [
     '.abuseipdb',
     lazy(() => import(/* webpackChunkName: "connectorIconAbuseipdb" */ './specs/abuseipdb/icon')),
   ],
