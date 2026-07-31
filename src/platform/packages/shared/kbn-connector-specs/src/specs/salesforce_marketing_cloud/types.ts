@@ -137,6 +137,27 @@ export const GetJourneyInputSchema = lazySchema(() =>
 );
 export type GetJourneyInput = z.infer<typeof GetJourneyInputSchema>;
 
+export const ListDataExtensionsInputSchema = lazySchema(() =>
+  z.object({
+    page: z
+      .number()
+      .int()
+      .min(1)
+      .optional()
+      .default(1)
+      .describe('Page number for pagination (1-based, default 1).'),
+    pageSize: z
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .optional()
+      .default(50)
+      .describe('Number of Data Extensions per page (1–200, default 50).'),
+  })
+);
+export type ListDataExtensionsInput = z.infer<typeof ListDataExtensionsInputSchema>;
+
 export const ListEmailDefinitionsInputSchema = lazySchema(() =>
   z.object({
     page: z

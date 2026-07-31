@@ -32,7 +32,7 @@
 - [PagerDuty (MCP)](/reference/connectors-kibana/pagerduty-mcp-action-type.md): Access incidents, escalation policies, schedules, on-calls, users, and teams in PagerDuty.
 - [Rootly](/reference/connectors-kibana/rootly-action-type.md): Declare and drive incidents through their lifecycle.
 - [Salesforce](/reference/connectors-kibana/salesforce-action-type.md): Query and retrieve data from your Salesforce org using SOQL and the REST API.
-- [Salesforce Marketing Cloud](/reference/connectors-kibana/salesforce-marketing-cloud-action-type.md): Look up subscribers, query Data Extensions, and inspect journeys and email send definitions in Salesforce Marketing Cloud.
+- [Salesforce Marketing Cloud](/reference/connectors-kibana/salesforce-marketing-cloud-action-type.md): Discover and query Data Extensions, look up subscribers, and inspect journeys and email send definitions in Salesforce Marketing Cloud.
 - [Sentry](/reference/connectors-kibana/sentry-action-type.md): Triage Sentry issues and provision issue alert rules.
 - [ServiceNow](/reference/connectors-kibana/servicenow-search-action-type.md): Search and retrieve records from ServiceNow.
 - [SharePoint online](/reference/connectors-kibana/sharepoint-online-action-type.md): Search across SharePoint sites, pages, and content using the Microsoft Graph API.

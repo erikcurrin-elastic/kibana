@@ -13,6 +13,7 @@ import { UISchemas, type ConnectorSpec } from '../../connector_spec';
 import type {
   LookupSubscriberInput,
   QueryDataExtensionInput,
+  ListDataExtensionsInput,
   ListJourneysInput,
   GetJourneyInput,
   ListEmailDefinitionsInput,
@@ -20,6 +21,7 @@ import type {
 import {
   LookupSubscriberInputSchema,
   QueryDataExtensionInputSchema,
+  ListDataExtensionsInputSchema,
   ListJourneysInputSchema,
   GetJourneyInputSchema,
   ListEmailDefinitionsInputSchema,
@@ -44,7 +46,7 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
       'core.kibanaConnectorSpecs.salesforceMarketingCloud.metadata.description',
       {
         defaultMessage:
-          'Look up subscribers, query Data Extensions, and inspect journeys and email campaigns in Salesforce Marketing Cloud.',
+          'Look up subscribers, query Data Extensions, and inspect journeys and email send definitions in Salesforce Marketing Cloud.',
       }
     ),
     minimumLicense: 'enterprise',
@@ -63,8 +65,7 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
           meta: {
             scope: { hidden: true },
             tokenUrl: {
-              placeholder:
-                'https://{subdomain}.auth.marketingcloudapis.com/v2/token',
+              placeholder: 'https://{subdomain}.auth.marketingcloudapis.com/v2/token',
               helpText: i18n.translate(
                 'core.kibanaConnectorSpecs.salesforceMarketingCloud.auth.tokenUrl.helpText',
                 {
@@ -121,12 +122,33 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
         const base = getRestApiBase(ctx.config as Record<string, unknown>);
         const escapedEmail = input.email.replace(/'/g, "''");
         const params: Record<string, string> = {
-          '$filter': `emailAddress eq '${escapedEmail}'`,
+          $filter: `emailAddress eq '${escapedEmail}'`,
         };
         if (input.properties && input.properties.length > 0) {
-          params['$select'] = input.properties.join(',');
+          params.$select = input.properties.join(',');
         }
         const response = await ctx.client.get(`${base}/contacts/v1/contacts`, { params });
+        return response.data;
+      },
+    },
+
+    // ── Data Extension discovery ──────────────────────────────────────────────
+    listDataExtensions: {
+      isTool: true,
+      description:
+        "List Data Extensions defined in Salesforce Marketing Cloud. Returns each Data Extension's " +
+        'name, external key, and field definitions (column names, data types, and constraints). ' +
+        'Use this to discover which Data Extensions exist and what columns they contain before ' +
+        'calling queryDataExtension — it gives you the externalKey and field names needed to ' +
+        'construct filters.',
+      input: ListDataExtensionsInputSchema,
+      handler: async (ctx, input: ListDataExtensionsInput) => {
+        const base = getRestApiBase(ctx.config as Record<string, unknown>);
+        const params: Record<string, string | number> = {
+          $page: input.page ?? 1,
+          $pageSize: input.pageSize ?? 50,
+        };
+        const response = await ctx.client.get(`${base}/data/v1/customobjects`, { params });
         return response.data;
       },
     },
@@ -145,11 +167,11 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
         const base = getRestApiBase(ctx.config as Record<string, unknown>);
         const keySegment = encodeURIComponent(input.externalKey);
         const params: Record<string, string | number> = {
-          '$pageSize': input.pageSize ?? 50,
-          '$page': input.page ?? 1,
+          $pageSize: input.pageSize ?? 50,
+          $page: input.page ?? 1,
         };
         if (input.filter) {
-          params['$filter'] = input.filter;
+          params.$filter = input.filter;
         }
         const response = await ctx.client.get(
           `${base}/data/v1/customobjectdata/key/${keySegment}/rowset`,
@@ -201,10 +223,9 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
         if (input.versionNumber != null) {
           params.versionNumber = input.versionNumber;
         }
-        const response = await ctx.client.get(
-          `${base}/interaction/v1/interactions/${idSegment}`,
-          { params }
-        );
+        const response = await ctx.client.get(`${base}/interaction/v1/interactions/${idSegment}`, {
+          params,
+        });
         return response.data;
       },
     },
@@ -275,7 +296,9 @@ export const SalesforceMarketingCloudConnector: ConnectorSpec = {
     'A "Bounced" or "Unsubscribed" status means the address will not receive future sends.',
     '',
     '### Data Extensions',
-    'Data Extensions are SFMC\'s primary data storage (similar to database tables).',
+    "Data Extensions are SFMC's primary data storage (similar to database tables).",
+    'Call `listDataExtensions` first to discover available DEs and their column names, then use the',
+    'returned `externalKey` and field names to build `queryDataExtension` calls.',
     'The All Subscribers list can itself be queried as a Data Extension with key `All Subscribers`.',
     '',
     '### Journeys',

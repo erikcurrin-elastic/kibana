@@ -48,6 +48,11 @@ Lookup subscriber
     - `email` (required): Email address to look up (for example, `jane.doe@example.com`).
     - `properties` (optional): List of attribute names to include in the response. Omit to return all default attributes.
 
+List data extensions
+:   List Data Extensions defined in Salesforce Marketing Cloud. Returns each Data Extension's name, external key, and field definitions (column names and types). Use this to discover available Data Extensions and their schemas before querying them.
+    - `page` (optional): Page number (1-based, default 1).
+    - `pageSize` (optional): Number of Data Extensions per page (1–200, default 50).
+
 Query data extension
 :   Query rows from a Data Extension by its external key. Supports OData-style filtering and pagination.
     - `externalKey` (required): External key of the Data Extension (for example, `Contacts_DE` or `All Subscribers`).

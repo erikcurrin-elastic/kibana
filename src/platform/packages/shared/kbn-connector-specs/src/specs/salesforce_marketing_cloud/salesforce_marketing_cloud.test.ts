@@ -74,19 +74,77 @@ describe('SalesforceMarketingCloudConnector', () => {
 
   describe('schema', () => {
     it('defines a restApiBaseUrl field', () => {
-      if (!SalesforceMarketingCloudConnector.schema) throw new Error('schema not defined');
-      expect(() =>
-        SalesforceMarketingCloudConnector.schema!.parse({ restApiBaseUrl: REST_BASE })
-      ).not.toThrow();
+      const { schema } = SalesforceMarketingCloudConnector;
+      if (!schema) throw new Error('schema not defined');
+      expect(() => schema.parse({ restApiBaseUrl: REST_BASE })).not.toThrow();
     });
   });
 
   // ── Tool exposure ────────────────────────────────────────────────────────────
 
   it('exposes all actions as tools', () => {
-    for (const [name, action] of Object.entries(SalesforceMarketingCloudConnector.actions)) {
+    for (const [, action] of Object.entries(SalesforceMarketingCloudConnector.actions)) {
       expect(action.isTool).toBe(true);
     }
+  });
+
+  // ── listDataExtensions ───────────────────────────────────────────────────────
+
+  describe('listDataExtensions action', () => {
+    const mockResponse = {
+      data: {
+        count: 2,
+        page: 1,
+        pageSize: 50,
+        items: [
+          {
+            name: 'Contacts DE',
+            externalKey: 'Contacts_DE',
+            fields: [
+              {
+                name: 'EmailAddress',
+                fieldType: 'EmailAddress',
+                isPrimaryKey: true,
+                isRequired: true,
+              },
+              { name: 'Status', fieldType: 'Text', isPrimaryKey: false, isRequired: false },
+            ],
+          },
+          {
+            name: 'Purchase History',
+            externalKey: 'PurchaseHistory_2024',
+            fields: [{ name: 'OrderId', fieldType: 'Text', isPrimaryKey: true, isRequired: true }],
+          },
+        ],
+      },
+    };
+
+    it('calls the customobjects endpoint with default pagination', async () => {
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      const result = await SalesforceMarketingCloudConnector.actions.listDataExtensions.handler(
+        mockContext,
+        {}
+      );
+
+      expect(mockClient.get).toHaveBeenCalledWith(`${REST_BASE}/data/v1/customobjects`, {
+        params: { $page: 1, $pageSize: 50 },
+      });
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('passes custom pagination params', async () => {
+      mockClient.get.mockResolvedValue(mockResponse);
+
+      await SalesforceMarketingCloudConnector.actions.listDataExtensions.handler(mockContext, {
+        page: 3,
+        pageSize: 10,
+      });
+
+      expect(mockClient.get).toHaveBeenCalledWith(`${REST_BASE}/data/v1/customobjects`, {
+        params: { $page: 3, $pageSize: 10 },
+      });
+    });
   });
 
   // ── lookupSubscriber ────────────────────────────────────────────────────────
@@ -113,7 +171,7 @@ describe('SalesforceMarketingCloudConnector', () => {
       );
 
       expect(mockClient.get).toHaveBeenCalledWith(`${REST_BASE}/contacts/v1/contacts`, {
-        params: { '$filter': "emailAddress eq 'jane.doe@example.com'" },
+        params: { $filter: "emailAddress eq 'jane.doe@example.com'" },
       });
       expect(result).toEqual(mockResponse.data);
     });
@@ -144,7 +202,7 @@ describe('SalesforceMarketingCloudConnector', () => {
 
       expect(mockClient.get).toHaveBeenCalledWith(
         `${REST_BASE}/data/v1/customobjectdata/key/Contacts_DE/rowset`,
-        { params: { '$pageSize': 50, '$page': 1 } }
+        { params: { $pageSize: 50, $page: 1 } }
       );
       expect(result).toEqual(mockResponse.data);
     });
@@ -163,9 +221,9 @@ describe('SalesforceMarketingCloudConnector', () => {
         `${REST_BASE}/data/v1/customobjectdata/key/Contacts_DE/rowset`,
         {
           params: {
-            '$pageSize': 10,
-            '$page': 2,
-            '$filter': "Status eq 'Active'",
+            $pageSize: 10,
+            $page: 2,
+            $filter: "Status eq 'Active'",
           },
         }
       );
@@ -370,8 +428,8 @@ describe('SalesforceMarketingCloudConnector', () => {
       expect(SalesforceMarketingCloudConnector.skill).toBeDefined();
       expect(typeof SalesforceMarketingCloudConnector.skill).toBe('string');
       expect(SalesforceMarketingCloudConnector.skill).toContain('queryDataExtension');
-      expect(SalesforceMarketingCloudConnector.skill).toContain('listJourneys');
-      expect(SalesforceMarketingCloudConnector.skill).toContain('lookupSubscriber');
+      expect(SalesforceMarketingCloudConnector.skill).toContain('listDataExtensions');
+      expect(SalesforceMarketingCloudConnector.skill).toContain('versionNumber');
     });
   });
 });
