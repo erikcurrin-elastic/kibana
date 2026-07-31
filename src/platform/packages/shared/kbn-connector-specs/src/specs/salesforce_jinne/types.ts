@@ -134,7 +134,7 @@ export const EndSessionInputSchema = lazySchema(() =>
       .max(200)
       .describe(
         'The Jinne session ID returned by createSession. Ending the session frees up agent capacity ' +
-          'and finalises the conversation transcript. Example: "0Mdxx000000001"'
+          'and finalizes the conversation transcript. Example: "0Mdxx000000001"'
       ),
   })
 );

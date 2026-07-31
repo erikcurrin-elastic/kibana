@@ -225,8 +225,8 @@ export const SalesforceJinneConnector: ConnectorSpec = {
       // Agents should call sendMessage until the conversation is complete, not proactively end sessions.
       description:
         'End an active Jinne AI agent session. ' +
-        'Finalises the conversation transcript and frees up agent capacity. ' +
-        'This action is irreversible — the session cannot be resumed after it is ended. ' +
+        'Finalizes the conversation transcript and frees up agent capacity. ' +
+        'This action is irreversible — the session cannot be resumed after you end it. ' +
         'Only call this when the conversation is fully complete.',
       input: EndSessionInputSchema,
       handler: async (ctx, input: EndSessionInput) => {

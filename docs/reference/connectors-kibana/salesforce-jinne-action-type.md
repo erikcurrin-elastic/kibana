@@ -19,7 +19,7 @@ You can create connectors in **{{stack-manage-app}} > {{connectors-ui}}**.
 
 ### Connector configuration [salesforce-jinne-connector-configuration]
 
-The Salesforce Jinne connector supports **OAuth 2.0 authorization code** (recommended) and **OAuth 2.0 Client Credentials** authentication in {{kib}}. The fields you fill in depend on which auth type you select.
+The Salesforce Jinne connector supports **OAuth 2.0 authorization code** (recommended) and **OAuth 2.0 Client Credentials** authentication in {{kib}}. The fields you fill in depend on which authentication type you select.
 
 Token URL
 :   The OAuth 2.0 token endpoint for your Salesforce instance. Use your **domain** plus `/services/oauth2/token`.
@@ -51,7 +51,7 @@ List agents
     - `nextPageUrl` (optional): Pagination URL from a previous `listAgents` response.
 
 Create session
-:   Start a new conversation session with a specific Jinne AI agent. Returns the `sessionId` and any initial agent response. Pass the `sessionId` to `sendMessage` to begin the conversation.
+:   Create a new conversation session with a specific Jinne AI agent. Returns the `sessionId` and any initial agent response. Pass the `sessionId` to `sendMessage` to begin the conversation.
     - `agentId` (required): The ID of the Jinne agent to converse with (from `listAgents`).
     - `externalSessionKey` (optional): A caller-defined key to correlate the session with your external system. Must be unique per agent.
 
@@ -62,13 +62,13 @@ Send message
     - `variables` (optional): Structured input variables to pass alongside the message (for example, a Salesforce record ID for the agent to look up).
 
 Get session messages
-:   Retrieve the conversation transcript for an existing Jinne session, including both user messages and agent replies in chronological order.
+:   Get the conversation transcript for an existing Jinne session, including both user messages and agent replies in chronological order.
     - `sessionId` (required): The session ID returned by `createSession`.
     - `maxResults` (optional): Maximum number of messages to return (1–100). Defaults to 20.
     - `nextPageUrl` (optional): Pagination URL from a previous `getSessionMessages` response.
 
 End session
-:   End an active Jinne AI agent session. This action finalizes the conversation transcript and frees up agent capacity. The session cannot be resumed after you end it; call this only when the conversation is fully complete.
+:   End an active Jinne AI agent session. This action finalizes the conversation transcript and frees up agent capacity. You cannot resume the session after you end it; call this only when the conversation is fully complete.
     - `sessionId` (required): The session ID returned by `createSession`.
 
 ## Connector networking configuration [salesforce-jinne-connector-networking-configuration]
@@ -90,17 +90,17 @@ https://<your-kibana-host>/api/actions/connector/_oauth_callback
 ```
 
 1. Log in to the Salesforce org. From the **cog** menu, select **Setup**.
-2. In the navigation panel, under **Platform Tools**, expand **Apps** > **External Client Apps**.
+2. In the navigation panel, under **Platform Tools**, expand **Apps** → **External Client Apps**.
 3. Open **External Client App Manager**, then select **New External Client App**.
-4. Set an **External Client App Name** (for example, `Elastic Jinne`) and an **API Name**.
+4. In the **External Client App Name** field, enter `Elastic Jinne`. Enter a value in the **API Name** field.
 5. Under **OAuth Settings**, set **Callback URL** to the value from **OAuth callback URL**.
 6. Under **Available Scopes**, select at least:
    - **Manage user data via APIs (api)**
    - **Perform requests at any time (refresh_token, offline_access)**
    - Any additional scopes required for Jinne agent API access in your org.
 7. Under **Flow Enablement**, enable the flow that matches the authentication type you use:
-   - **OAuth 2.0 authorization code** — enable **Enable Authorization Code and Credentials Flow**.
-   - **OAuth 2.0 Client Credentials** — enable **Enable Client Credentials Flow**.
+   - **OAuth 2.0 authorization code** — select **Enable Authorization Code and Credentials Flow**.
+   - **OAuth 2.0 Client Credentials** — select **Enable Client Credentials Flow**.
 8. **Save** the app and copy the **Consumer Key** (Client ID) and **Consumer Secret** (Client Secret).
 9. In {{kib}}, create the Salesforce Jinne connector and enter:
    - **Token URL**: your org's token endpoint (domain + `/services/oauth2/token`).
