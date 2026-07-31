@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Rounded rectangle background in Salesforce Marketing Cloud teal/blue -->
+  <rect width="100" height="100" rx="14" fill="#00A1E0"/>
+  <!-- Cloud shape in white -->
+  <path fill="white" d="M74 52.5c0-6.4-5.2-11.5-11.5-11.5-1.3 0-2.5.2-3.6.6C57.3 36.4 52.1 32 45.9 32c-7 0-12.7 5.7-12.7 12.7 0 .4 0 .8.1 1.2-3.6 1.3-6.3 4.7-6.3 8.6 0 5.1 4.2 9.3 9.3 9.3h28.9c6.1 0 8.8-4.4 8.8-11.3z"/>
+  <!-- Envelope flap (V line) in Salesforce blue -->
+  <path stroke="#00A1E0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M34 60 L50 70 L66 60"/>
+  <!-- Envelope body border -->
+  <rect x="34" y="59" width="32" height="19" rx="2.5" stroke="#00A1E0" stroke-width="2.5" fill="none"/>
+</svg>
