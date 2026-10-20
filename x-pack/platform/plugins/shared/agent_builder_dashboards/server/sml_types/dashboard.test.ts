@@ -113,6 +113,14 @@ describe('dashboardSmlType', () => {
     expect(dashboardSmlType.id).toBe(DASHBOARD_KI_TYPE);
   });
 
+  it('attaches as a dashboard attachment', () => {
+    const dashboardSmlType = createDashboardSmlType({
+      getDashboardClient: async () => createDashboardClient(),
+    });
+
+    expect(dashboardSmlType.attachmentType).toBe(DASHBOARD_ATTACHMENT_TYPE);
+  });
+
   it('lists dashboards across all spaces', async () => {
     const finder = {
       find: jest.fn().mockReturnValue(
@@ -347,5 +355,51 @@ describe('dashboardSmlType', () => {
     expect(result).toEqual(
       expect.objectContaining({ type: 'dashboard', title: 'System Overview' })
     );
+  });
+
+  describe('searchByTitle', () => {
+    const search = async (title: string) => {
+      const find = jest.fn().mockResolvedValue({
+        saved_objects: [
+          { id: 'dash-1', attributes: { title: 'Sales overview' } },
+          { id: 'dash-2', attributes: {} },
+        ],
+      });
+      const dashboardSmlType = createDashboardSmlType({
+        getDashboardClient: async () => createDashboardClient(),
+      });
+      const results = await dashboardSmlType.searchByTitle!({ title, size: 5 }, {
+        savedObjectsClient: { find },
+      } as never);
+      return { find, results };
+    };
+
+    it('searches the title by prefix and maps the results', async () => {
+      const { find, results } = await search('sal');
+
+      expect(find).toHaveBeenCalledWith({
+        type: 'dashboard',
+        fields: ['title'],
+        perPage: 5,
+        search: 'sal*',
+        searchFields: ['title'],
+      });
+      expect(results).toEqual([
+        { originId: 'dash-1', title: 'Sales overview' },
+        { originId: 'dash-2', title: 'dash-2' },
+      ]);
+    });
+
+    it('lists dashboards without a search when the title is empty', async () => {
+      const { find } = await search('');
+
+      expect(find.mock.calls[0][0]).not.toHaveProperty('search');
+    });
+
+    it('drops the operators of the saved objects search', async () => {
+      const { find } = await search('logs-* (prod)');
+
+      expect(find.mock.calls[0][0].search).toBe('logs prod*');
+    });
   });
 });

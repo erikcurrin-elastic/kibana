@@ -8,6 +8,7 @@
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import type { SmlListItem } from '@kbn/agent-builder-sml-plugin/server';
 import { VISUALIZATION_KI_TYPE } from '@kbn/agent-builder-elastic-ai-index-ki-types';
+import { VISUALIZATION_ATTACHMENT_TYPE } from '@kbn/agent-builder-visualizations-common';
 import { visualizationSmlType } from './visualization';
 
 jest.mock('@kbn/lens-embeddable-utils', () => ({
@@ -441,6 +442,50 @@ describe('visualizationSmlType', () => {
         layers: [{ id: 'layer1' }],
       });
       expect(data.chart_type).toBe('pie');
+    });
+  });
+
+  describe('searchByTitle', () => {
+    const search = (title: string) =>
+      visualizationSmlType.searchByTitle!({ title, size: 5 }, createContext() as never);
+
+    beforeEach(() => {
+      mockSavedObjectsClient.find.mockResolvedValue({
+        saved_objects: [
+          { id: 'vis-1', attributes: { title: 'CPU over time' } },
+          { id: 'vis-2', attributes: {} },
+        ],
+      });
+    });
+
+    it('attaches as a visualization attachment', () => {
+      expect(visualizationSmlType.attachmentType).toBe(VISUALIZATION_ATTACHMENT_TYPE);
+    });
+
+    it('searches the title by prefix and maps the results', async () => {
+      expect(await search('cpu')).toEqual([
+        { originId: 'vis-1', title: 'CPU over time' },
+        { originId: 'vis-2', title: 'vis-2' },
+      ]);
+      expect(mockSavedObjectsClient.find).toHaveBeenCalledWith({
+        type: 'lens',
+        fields: ['title'],
+        perPage: 5,
+        search: 'cpu*',
+        searchFields: ['title'],
+      });
+    });
+
+    it('lists visualizations without a search when the title is empty', async () => {
+      await search('');
+
+      expect(mockSavedObjectsClient.find.mock.calls[0][0]).not.toHaveProperty('search');
+    });
+
+    it('drops the operators of the saved objects search', async () => {
+      await search('logs-* (prod)');
+
+      expect(mockSavedObjectsClient.find.mock.calls[0][0].search).toBe('logs prod*');
     });
   });
 });
