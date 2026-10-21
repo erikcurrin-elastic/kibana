@@ -359,4 +359,72 @@ describe('CommandMenuList', () => {
       });
     });
   });
+
+  describe('Tab handling by the menu', () => {
+    const pressTab = (ref: React.RefObject<CommandMenuHandle>) => {
+      act(() => {
+        ref.current!.handleKeyDown({ key: 'Tab' } as React.KeyboardEvent);
+      });
+    };
+
+    it('does not select the option when the menu handled Tab', () => {
+      const ref = createRef<CommandMenuHandle>();
+      const onSelect = jest.fn();
+      const onTab = jest.fn().mockReturnValue(true);
+      renderWithProvider(
+        <CommandMenuList
+          ref={ref}
+          options={mockOptions}
+          isLoading={false}
+          onSelect={onSelect}
+          onTab={onTab}
+        />
+      );
+
+      pressTab(ref);
+
+      expect(onTab).toHaveBeenCalledTimes(1);
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it('selects the highlighted option when the menu did not handle Tab', () => {
+      const ref = createRef<CommandMenuHandle>();
+      const onSelect = jest.fn();
+      renderWithProvider(
+        <CommandMenuList
+          ref={ref}
+          options={mockOptions}
+          isLoading={false}
+          onSelect={onSelect}
+          onTab={() => false}
+        />
+      );
+
+      pressTab(ref);
+
+      expect(onSelect).toHaveBeenCalledWith(mockOptions[0]);
+    });
+
+    it('leaves Enter to select the option', () => {
+      const ref = createRef<CommandMenuHandle>();
+      const onSelect = jest.fn();
+      const onTab = jest.fn().mockReturnValue(true);
+      renderWithProvider(
+        <CommandMenuList
+          ref={ref}
+          options={mockOptions}
+          isLoading={false}
+          onSelect={onSelect}
+          onTab={onTab}
+        />
+      );
+
+      act(() => {
+        ref.current!.handleKeyDown({ key: 'Enter' } as React.KeyboardEvent);
+      });
+
+      expect(onSelect).toHaveBeenCalledWith(mockOptions[0]);
+      expect(onTab).not.toHaveBeenCalled();
+    });
+  });
 });

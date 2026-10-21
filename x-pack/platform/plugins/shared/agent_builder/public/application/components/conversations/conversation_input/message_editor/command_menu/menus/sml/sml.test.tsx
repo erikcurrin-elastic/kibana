@@ -9,6 +9,7 @@ import React, { createRef } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { EuiProvider } from '@elastic/eui';
 import { Sml } from './sml';
+import { SML_SEARCH_DEFAULT_SIZE } from '../../../../../../../../services/sml/constants';
 import { CommandId } from '../../types';
 import type { CommandMenuHandle } from '../../types';
 
@@ -314,6 +315,203 @@ describe('Sml', () => {
         label: 'connector/workday_2',
         metadata: {},
       });
+    });
+  });
+
+  describe('completing the typed text with Tab', () => {
+    const results = (...titles: Array<[string, string]>) =>
+      titles.map(([type, title]) => ({
+        id: `${type}:${title}`,
+        type,
+        title,
+        origin_id: title,
+      }));
+
+    const pressTab = (query: string, onSelect = jest.fn(), onReplaceText = jest.fn()) => {
+      const ref = createRef<CommandMenuHandle>();
+      renderWithProvider(
+        <Sml ref={ref} query={query} onSelect={onSelect} onReplaceText={onReplaceText} />
+      );
+      act(() => {
+        ref.current!.handleKeyDown({ key: 'Tab' } as React.KeyboardEvent);
+      });
+      return { onSelect, onReplaceText };
+    };
+
+    const setResults = (items: ReturnType<typeof results>) => {
+      mockUseSmlAutocompleteReturn = {
+        results: items,
+        total: items.length,
+        isLoading: false,
+        isError: false,
+        error: null,
+      };
+    };
+
+    it('completes the type when all the matches share it', () => {
+      setResults(
+        results(
+          ['dashboard', 'dashboard_A'],
+          ['dashboard', 'dashboard_B'],
+          ['dashboard', 'super_A'],
+          ['connector', 'my_dashing_connector']
+        )
+      );
+
+      const { onSelect, onReplaceText } = pressTab('dash');
+
+      expect(onReplaceText).toHaveBeenCalledWith('dashboard/');
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it('completes the title as far as the matches agree', () => {
+      setResults(results(['dashboard', 'dashboard_A'], ['dashboard', 'dashboard_B']));
+
+      expect(pressTab('dashboard/da').onReplaceText).toHaveBeenCalledWith('dashboard/dashboard_');
+    });
+
+    it('completes only up to where the matches differ in the type', () => {
+      setResults(
+        results(['alerting_v2_rule', 'High CPU'], ['alerting_v2_action_policy', 'Critical'])
+      );
+
+      expect(pressTab('a').onReplaceText).toHaveBeenCalledWith('alerting_v2_');
+    });
+
+    it('ignores case when matching, and completes with the case of the results', () => {
+      setResults(results(['dashboard', 'Sales overview'], ['dashboard', 'Sales pipeline']));
+
+      expect(pressTab('DASHBOARD/sal').onReplaceText).toHaveBeenCalledWith('dashboard/Sales ');
+    });
+
+    it('ignores results that match somewhere inside the title', () => {
+      setResults(
+        results(
+          ['workflow', 'Dashboard snapshot'],
+          ['dashboard', 'Sales overview'],
+          ['dashboard', 'Security posture']
+        )
+      );
+
+      expect(pressTab('dash').onReplaceText).toHaveBeenCalledWith('dashboard/S');
+    });
+
+    it('selects the highlighted result when there is nothing more to complete', () => {
+      setResults(results(['dashboard', 'dashboard_A'], ['dashboard', 'dashboard_B']));
+
+      const { onSelect, onReplaceText } = pressTab('dashboard/dashboard_');
+
+      expect(onReplaceText).not.toHaveBeenCalled();
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'dashboard:dashboard_A', label: 'dashboard/dashboard_A' })
+      );
+    });
+
+    it('picks the only result straight away, rather than completing its title', () => {
+      setResults(results(['dashboard', 'Sales overview']));
+
+      const { onSelect, onReplaceText } = pressTab('dashboard/sa');
+
+      expect(onReplaceText).not.toHaveBeenCalled();
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'dashboard:Sales overview',
+          label: 'dashboard/Sales overview',
+        })
+      );
+    });
+
+    it('only completes the type when a full page may hide other matches', () => {
+      setResults(
+        results(
+          ...Array.from({ length: SML_SEARCH_DEFAULT_SIZE }, (_, index): [string, string] => [
+            'dashboard',
+            `security_${index}`,
+          ])
+        )
+      );
+
+      expect(pressTab('dash').onReplaceText).toHaveBeenCalledWith('dashboard/');
+      const { onSelect, onReplaceText } = pressTab('dashboard/s');
+      expect(onReplaceText).not.toHaveBeenCalledWith('dashboard/security_');
+      expect(onSelect).toHaveBeenCalled();
+    });
+
+    it('selects the highlighted result when the menu cannot complete the text', () => {
+      setResults(results(['dashboard', 'dashboard_A'], ['dashboard', 'dashboard_B']));
+      const ref = createRef<CommandMenuHandle>();
+      const onSelect = jest.fn();
+      renderWithProvider(<Sml ref={ref} query="dash" onSelect={onSelect} />);
+
+      act(() => {
+        ref.current!.handleKeyDown({ key: 'Tab' } as React.KeyboardEvent);
+      });
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('order of the results', () => {
+    const rowsInOrder = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('.euiSelectableListItem')).map(
+        (row) => row.textContent
+      );
+
+    const setResults = (items: Array<{ type: string; title: string }>) => {
+      mockUseSmlAutocompleteReturn = {
+        results: items.map(({ type, title }) => ({
+          id: `${type}:${title}`,
+          type,
+          title,
+          origin_id: title,
+        })),
+        total: items.length,
+        isLoading: false,
+        isError: false,
+        error: null,
+      };
+    };
+
+    it('lists them alphabetically by type and title, ignoring case and reading numbers as numbers', () => {
+      setResults([
+        { type: 'workflow', title: 'Notify on-call' },
+        { type: 'dashboard', title: 'super_B' },
+        { type: 'dashboard', title: 'dashboard_B' },
+        { type: 'dashboard', title: 'Pods 10' },
+        { type: 'connector', title: 'zoom' },
+        { type: 'dashboard', title: 'dashboard_A' },
+        { type: 'dashboard', title: 'Pods 2' },
+      ]);
+
+      const { container } = renderWithProvider(<Sml query="/" onSelect={jest.fn()} />);
+
+      expect(rowsInOrder(container)).toEqual([
+        'connector/zoom',
+        'dashboard/dashboard_A',
+        'dashboard/dashboard_B',
+        'dashboard/Pods 2',
+        'dashboard/Pods 10',
+        'dashboard/super_B',
+        'workflow/Notify on-call',
+      ]);
+    });
+
+    it('still puts the exact name match first when a full name is typed after the slash', () => {
+      setResults([
+        { type: 'connector', title: 'workday_2' },
+        { type: 'connector', title: 'workday' },
+        { type: 'connector', title: 'a_workday' },
+      ]);
+
+      const { container } = renderWithProvider(
+        <Sml query="connector/workday" onSelect={jest.fn()} />
+      );
+
+      expect(rowsInOrder(container)).toEqual([
+        'connector/workday',
+        'connector/a_workday',
+        'connector/workday_2',
+      ]);
     });
   });
 });
