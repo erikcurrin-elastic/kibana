@@ -280,6 +280,18 @@ describe('CommandMenuList', () => {
       expect(ref.current!.isKeyDownEventHandled({ key: 'a' } as React.KeyboardEvent)).toBe(false);
     });
 
+    it('leaves Enter and Tab unhandled when there is no option to select', () => {
+      const ref = createRef<CommandMenuHandle>();
+      renderWithProvider(
+        <CommandMenuList ref={ref} options={[]} isLoading={false} onSelect={jest.fn()} />
+      );
+
+      expect(ref.current!.isKeyDownEventHandled({ key: 'Enter' } as React.KeyboardEvent)).toBe(
+        false
+      );
+      expect(ref.current!.isKeyDownEventHandled({ key: 'Tab' } as React.KeyboardEvent)).toBe(false);
+    });
+
     describe('spaceSelection', () => {
       it('does not treat Space as handled by default', () => {
         const ref = createRef<CommandMenuHandle>();
