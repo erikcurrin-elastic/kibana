@@ -127,8 +127,8 @@ export const CommandMenuList = forwardRef<CommandMenuHandle, CommandMenuListProp
           keys.ARROW_UP,
           // Ctrl+n and Ctrl+p
           ...(event.ctrlKey ? ['n', 'p'] : []),
-          keys.ENTER,
-          keys.TAB,
+          // With nothing to select, leave Enter to send the message and Tab to move focus.
+          ...(options.length > 0 ? [keys.ENTER, keys.TAB] : []),
         ];
         // Always claim Space, even with zero options: results can lag a
         // keystroke behind, and a leaked space would type as plain text.
